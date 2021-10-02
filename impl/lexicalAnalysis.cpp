@@ -105,7 +105,8 @@ int lexicalAnalysis::getSymbol(FILE *file) {
                     }
                 }
             } else {
-                printf("/\n");
+                printf("Div\n");
+                fseek(file, -1, SEEK_CUR);
             }
         }
 
