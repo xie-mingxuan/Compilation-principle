@@ -7,6 +7,7 @@ RUN apt update && apt install gcc
 
 COPY headers impl main.cpp ./
 
-RUN gcc main.cpp -o main
+RUN gcc -c main.cpp -o main.o
+RUN gcc main.o -o main -lstdc++
 
 RUN chmod +x main
