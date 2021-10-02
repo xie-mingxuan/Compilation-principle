@@ -7,7 +7,6 @@ RUN apt update && apt install gcc
 
 COPY headers impl main.cpp ./
 
-RUN g++ -c main.cpp -o main.o
-RUN g++ main.o -o main -lstdc++
+RUN g++ ./headers/judgeLetter.h ./headers/lexicalAnalysis.h ./impl/judgeLetter.cpp ./impl/lexicalAnalysis.cpp main.cpp -o main
 
 RUN chmod +x main
