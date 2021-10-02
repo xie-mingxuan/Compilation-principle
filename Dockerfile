@@ -4,8 +4,8 @@ FROM frolvlad/alpine-gxx
 
 #WORKDIR /app
 
-COPY ./headers/* ./headers
-COPY ./impl/* ./impl
+COPY ./headers/* ./headers/
+COPY ./impl/* ./impl/
 COPY main.cpp ./
 
 RUN g++ ./headers/judgeLetter.h ./headers/lexicalAnalysis.h ./impl/judgeLetter.cpp ./impl/lexicalAnalysis.cpp main.cpp -o main
