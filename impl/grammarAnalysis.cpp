@@ -87,5 +87,7 @@ void CompUnit(FILE *in, FILE *out) {
         _exit_();
 
     fprintf(out, "define i32 @main(){\n");
+    printf("define i32 @main(){\n");
     fprintf(out, "    ret i32 %d\n}", num);
+    printf("    ret i32 %d\n}", num);
 }
