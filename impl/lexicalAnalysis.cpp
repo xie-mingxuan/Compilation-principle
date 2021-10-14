@@ -92,6 +92,7 @@ return_token getSymbol(FILE *file) {
             catToken();
             if (c == '0') {
                 if ((c = fgetc(file)) != EOF) {
+                    catToken();
                     if (c == 'x' || c == 'X') {
                         base = 16;
                         while ((c = fgetc(file)) != EOF) {
