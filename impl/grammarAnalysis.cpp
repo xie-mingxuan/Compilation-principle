@@ -86,6 +86,6 @@ void CompUnit(FILE *in, FILE *out) {
     if (word.type == "Error")
         _exit_();
 
-    fprintf(out, "define dso_local i32 @main(){\n");
+    fprintf(out, "define i32 @main(){\n");
     fprintf(out, "    ret i32 %d\n}", num);
 }
