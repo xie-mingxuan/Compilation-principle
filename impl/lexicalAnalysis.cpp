@@ -125,6 +125,9 @@ return_token getSymbol(FILE *file) {
             // 拼接结束后输出转化成对数字，清空 token 然后把文件指针前移一位
             returnToken.type = "Number";
             returnToken.num = transNum(base);
+            string num = "";
+            for (char i: token) num += i;
+            printf("%s\n", num.c_str());
             clearToken();
             fseek(file, -1, SEEK_CUR);
             return returnToken;
