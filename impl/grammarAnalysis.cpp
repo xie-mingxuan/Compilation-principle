@@ -74,5 +74,6 @@ void CompUnit(FILE *in, FILE *out) {
         exit(-1);
 
     fprintf(out, "define dso_local i32 @main(){\n");
-    fprintf(out, "    ret i32 %d\n}", num);
+    fprintf(out, "    ret i32 ");
+    fprintf(out, "%d}", num);
 }
