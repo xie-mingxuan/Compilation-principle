@@ -79,9 +79,9 @@ void CompUnit(FILE *in, FILE *out) {
     input = in;
     output = out;
     FuncDef(in);
-    word = getSymbol(in);
-    if (word.type == "Error")
-        _exit_();
+//    word = getSymbol(in);
+//    if (word.type == "Error")
+//        _exit_();
 
     fprintf(out, "define dso_local i32 @main(){\n");
     fprintf(out, "    ret i32 ");
