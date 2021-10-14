@@ -40,7 +40,8 @@ return_token getSymbol(FILE *file) {
     while ((c = fgetc(file)) != EOF) {
 
         // 读取字符，如果是空字符则跳过
-        if (judgeLetter::isSpace(c) || judgeLetter::isNewline(c) || judgeLetter::isTab(c));
+        if (judgeLetter::isSpace(c) || judgeLetter::isNewline(c) || judgeLetter::isTab(c))
+            continue;
 
             // 读取字符，如果是字母则拼接字符串
         else if (judgeLetter::isLetter(c) || judgeLetter::isUnderline(c)) {
@@ -90,7 +91,7 @@ return_token getSymbol(FILE *file) {
             int base = 10;
             catToken();
             if (c == '0') {
-                if ((c = fgetc(file) != EOF)) {
+                if ((c = fgetc(file)) != EOF) {
                     if (c == 'x' || c == 'X') {
                         base = 16;
                         while ((c = fgetc(file)) != EOF) {
@@ -270,6 +271,7 @@ return_token getSymbol(FILE *file) {
             returnToken.type = "Error";
             return returnToken;
         }
+        return returnToken;
     }
     return returnToken;
 }

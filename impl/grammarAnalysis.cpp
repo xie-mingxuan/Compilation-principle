@@ -73,17 +73,19 @@ void Stmt(FILE *file) {
     word = getSymbol(file);
     if (word.type != "Symbol" || word.token != "Semicolon")
         _exit_();
+
+    word = getSymbol(file);
 }
 
 void CompUnit(FILE *in, FILE *out) {
     input = in;
     output = out;
+    word = getSymbol(in);
     FuncDef(in);
-//    word = getSymbol(in);
-//    if (word.type == "Error")
-//        _exit_();
+    word = getSymbol(in);
+    if (word.type == "Error")
+        _exit_();
 
     fprintf(out, "define dso_local i32 @main(){\n");
-    fprintf(out, "    ret i32 ");
-    fprintf(out, "%d}", num);
+    fprintf(out, "    ret i32 %d\n}", num);
 }
