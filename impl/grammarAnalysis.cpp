@@ -6,6 +6,8 @@
 
 return_token word;
 int num;
+FILE *input;
+FILE *output;
 
 void FuncDef(FILE *);
 
@@ -17,14 +19,20 @@ void Block(FILE *);
 
 void Stmt(FILE *);
 
+void _exit_() {
+    fclose(input);
+    fclose(output);
+    exit(-1);
+}
+
 void FuncDef(FILE *file) {
     FuncType(file);
     Ident(file);
     if (word.type != "Symbol" || word.token != "LPar")
-        exit(-1);
+        _exit_();
     word = getSymbol(file);
     if (word.type != "Symbol" || word.token != "RPar")
-        exit(-1);
+        _exit_();
     word = getSymbol(file);
     Block(file);
 
@@ -33,45 +41,47 @@ void FuncDef(FILE *file) {
 
 void FuncType(FILE *file) {
     if (word.type != "Ident" || word.token != "int")
-        exit(-1);
+        _exit_();
 
     word = getSymbol(file);
 }
 
 void Ident(FILE *file) {
     if (word.type != "Ident" || word.token != "main")
-        exit(-1);
+        _exit_();
 
     word = getSymbol(file);
 }
 
 void Block(FILE *file) {
     if (word.type != "Symbol" || word.token != "LBrace")
-        exit(-1);
+        _exit_();
     word = getSymbol(file);
     Stmt(file);
     if (word.type != "Symbol" || word.token != "RBrace")
-        exit(-1);
+        _exit_();
     word = getSymbol(file);
 }
 
 void Stmt(FILE *file) {
     if (word.type != "Ident" || word.token != "Return")
-        exit(-1);
+        _exit_();
     word = getSymbol(file);
     if (word.type != "Number")
-        exit(-1);
+        _exit_();
     num = word.num;
     word = getSymbol(file);
     if (word.type != "Symbol" || word.token != "Semicolon")
-        exit(-1);
+        _exit_();
 }
 
 void CompUnit(FILE *in, FILE *out) {
+    input = in;
+    output = out;
     FuncDef(in);
     word = getSymbol(in);
     if (word.type == "Error")
-        exit(-1);
+        _exit_();
 
     fprintf(out, "define dso_local i32 @main(){\n");
     fprintf(out, "    ret i32 ");
