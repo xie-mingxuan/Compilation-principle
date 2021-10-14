@@ -4,7 +4,7 @@
 
 #include "../headers/grammarAnalysis.h"
 
-return_token token;
+return_token word;
 int num;
 
 void FuncDef(FILE *);
@@ -20,57 +20,57 @@ void Stmt(FILE *);
 void FuncDef(FILE *file) {
     FuncType(file);
     Ident(file);
-    if (token.type != "Symbol" || token.token != "LPar")
+    if (word.type != "Symbol" || word.token != "LPar")
         exit(-1);
-    token = getSymbol(file);
-    if (token.type != "Symbol" || token.token != "RPar")
+    word = getSymbol(file);
+    if (word.type != "Symbol" || word.token != "RPar")
         exit(-1);
-    token = getSymbol(file);
+    word = getSymbol(file);
     Block(file);
 
-    token = getSymbol(file);
+    word = getSymbol(file);
 }
 
 void FuncType(FILE *file) {
-    if (token.type != "Ident" || token.token != "int")
+    if (word.type != "Ident" || word.token != "int")
         exit(-1);
 
-    token = getSymbol(file);
+    word = getSymbol(file);
 }
 
 void Ident(FILE *file) {
-    if (token.type != "Ident" || token.token != "main")
+    if (word.type != "Ident" || word.token != "main")
         exit(-1);
 
-    token = getSymbol(file);
+    word = getSymbol(file);
 }
 
 void Block(FILE *file) {
-    if (token.type != "Symbol" || token.token != "LBrace")
+    if (word.type != "Symbol" || word.token != "LBrace")
         exit(-1);
-    token = getSymbol(file);
+    word = getSymbol(file);
     Stmt(file);
-    if (token.type != "Symbol" || token.token != "RBrace")
+    if (word.type != "Symbol" || word.token != "RBrace")
         exit(-1);
-    token = getSymbol(file);
+    word = getSymbol(file);
 }
 
 void Stmt(FILE *file) {
-    if (token.type != "Ident" || token.token != "Return")
+    if (word.type != "Ident" || word.token != "Return")
         exit(-1);
-    token = getSymbol(file);
-    if (token.type != "Number")
+    word = getSymbol(file);
+    if (word.type != "Number")
         exit(-1);
-    num = token.num;
-    token = getSymbol(file);
-    if (token.type != "Symbol" || token.token != "Semicolon")
+    num = word.num;
+    word = getSymbol(file);
+    if (word.type != "Symbol" || word.token != "Semicolon")
         exit(-1);
 }
 
 void CompUnit(FILE *in, FILE *out) {
     FuncDef(in);
-    token = getSymbol(in);
-    if (token.type == "Error")
+    word = getSymbol(in);
+    if (word.type == "Error")
         exit(-1);
 
     fprintf(out, "define dso_local i32 @main(){\n");
