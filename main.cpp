@@ -1,18 +1,15 @@
-#include <cstdio>
-#include "headers/lexicalAnalysis.h"
+#include <iostream>
+#include "headers/grammarAnalysis.h"
 
-using namespace std;
-
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Error argument count!\n");
-        return -2;
-    }
-    FILE *fp = fopen(argv[1], "r");
-    if (fp == nullptr) {
-        perror("Open file error!\n");
+int main(int argc, char **argv) {
+    if(argc != 3) {
+        printf("Args Err!\n");
         return -1;
     }
-    lexicalAnalysis analysis;
-    analysis.getSymbol(fp);
+    FILE *in = fopen(argv[1], "r");
+    FILE *out = fopen(argv[2], "w+");
+    CompUnit(in, out);
+    fclose(in);
+    fclose(out);
+    return 0;
 }

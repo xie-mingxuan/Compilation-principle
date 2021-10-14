@@ -65,6 +65,10 @@ public:
 
     static bool isLt(char c);
 
+    static bool isOctalDigit(char c);
+
+    static bool isHexadecimalDigit(char c);
+
 };
 
 

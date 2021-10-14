@@ -8,25 +8,16 @@
 #include "vector"
 #include "judgeLetter.h"
 #include "iostream"
-#include <cstring>
 
 using namespace std;
 
-class lexicalAnalysis {
-private:
-    char c;
-    int num = 0;
-    vector<char> token;
+typedef struct return_token {
+    string type;
+    string token;
+    int num;
+} return_token;
 
-    void clearToken();
-
-    void catToken();
-
-    int transNum();
-
-public:
-    int getSymbol(FILE *file);
-};
+return_token getSymbol(FILE *file);
 
 
 #endif //C_LEXICALANALYSIS_H

@@ -116,3 +116,19 @@ bool judgeLetter::isGt(char c) {
 bool judgeLetter::isLt(char c) {
     return c == '<';
 }
+
+bool judgeLetter::isOctalDigit(char c) {
+    if (isDigit(c)) {
+        if (c == '8' || c == '9')
+            return false;
+        return true;
+    }
+    return false;
+}
+
+bool judgeLetter::isHexadecimalDigit(char c) {
+    if (c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f' ||
+        c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F')
+        return true;
+    return isDigit(c);
+}

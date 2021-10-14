@@ -4,27 +4,39 @@
 
 #include "../headers/lexicalAnalysis.h"
 
-void lexicalAnalysis::clearToken() {
+char c;
+
+vector<char> token;
+
+void clearToken();
+
+void catToken();
+
+int transNum(int);
+
+void clearToken() {
     token.clear();
 }
 
-void lexicalAnalysis::catToken() {
+
+void catToken() {
     token.push_back(c);
 }
 
-int lexicalAnalysis::transNum() {
-    int res = 0;
+int transNum(int base) {
+    char *err;
+    string tokenStr;
     for (char i: token) {
-        res *= 10;
-        int i_int = i - '0';
-        res += i_int;
+        tokenStr += i;
     }
-    return res;
+    return strtol(tokenStr.c_str(), &err, base);
 }
 
-int lexicalAnalysis::getSymbol(FILE *file) {
-    fseek(file, 0, SEEK_SET);
+return_token getSymbol(FILE *file) {
+    //fseek(file, 0, SEEK_SET);
     clearToken();
+    return_token returnToken;
+    returnToken.type = "Symbol";
     while ((c = fgetc(file)) != EOF) {
 
         // 读取字符，如果是空字符则跳过
@@ -47,40 +59,73 @@ int lexicalAnalysis::getSymbol(FILE *file) {
             }
 
             if (strcmp(tokenStr.c_str(), "if") == 0)
-                printf("If\n");
+                returnToken.token = "If";
+                //printf("If\n");
             else if (strcmp(tokenStr.c_str(), "else") == 0)
-                printf("Else\n");
+                returnToken.token = "Else";
+                //printf("Else\n");
             else if (strcmp(tokenStr.c_str(), "while") == 0)
-                printf("While\n");
+                returnToken.token = "While";
+                //printf("While\n");
             else if (strcmp(tokenStr.c_str(), "break") == 0)
-                printf("Break\n");
+                returnToken.token = "Break";
+                //printf("Break\n");
             else if (strcmp(tokenStr.c_str(), "continue") == 0)
-                printf("Continue\n");
+                returnToken.token = "Continue";
+                //printf("Continue\n");
             else if (strcmp(tokenStr.c_str(), "return") == 0)
-                printf("Return\n");
-            else printf("Ident(%s)\n", tokenStr.c_str());
+                returnToken.token = "Return";
+                //printf("Return\n");
+            else
+                returnToken.token = tokenStr;
+            returnToken.type = "Ident";
+            //printf("Ident(%s)\n", tokenStr.c_str());
             clearToken();
             fseek(file, -1, SEEK_CUR);
+            return returnToken;
         }
 
             // 读取字符，如果是数字输出对应数
         else if (judgeLetter::isDigit(c)) {
+            int base = 10;
             catToken();
-            while ((c = fgetc(file)) != EOF) {
-                if (judgeLetter::isDigit(c)) {
-                    catToken();
-                    continue;
+            if (c == '0') {
+                if ((c = fgetc(file) != EOF)) {
+                    if (c == 'x' || c == 'X') {
+                        base = 16;
+                        while ((c = fgetc(file)) != EOF) {
+                            if (judgeLetter::isHexadecimalDigit(c)) {
+                                catToken();
+                                continue;
+                            }
+                            break;
+                        }
+                    } else {
+                        base = 8;
+                        while ((c = fgetc(file)) != EOF) {
+                            if (judgeLetter::isOctalDigit(c)) {
+                                catToken();
+                                continue;
+                            }
+                            break;
+                        }
+                    }
                 }
-                break;
+            } else {
+                while ((c = fgetc(file)) != EOF) {
+                    if (judgeLetter::isDigit(c)) {
+                        catToken();
+                        continue;
+                    }
+                    break;
+                }
             }
             // 拼接结束后输出转化成对数字，清空 token 然后把文件指针前移一位
-            num = transNum();
-            string numStr;
-            for (char i: token)
-                numStr += i;
-            printf("Number(%s)\n", numStr.c_str());
+            returnToken.type = "Number";
+            returnToken.num = transNum(base);
             clearToken();
             fseek(file, -1, SEEK_CUR);
+            return returnToken;
         }
 
             // 读取字符，如果是正斜杠判断是除号还是注释
@@ -105,8 +150,7 @@ int lexicalAnalysis::getSymbol(FILE *file) {
                     }
                 }
             } else {
-                printf("Div\n");
-                fseek(file, -1, SEEK_CUR);
+                printf("/\n");
             }
         }
 
@@ -114,9 +158,11 @@ int lexicalAnalysis::getSymbol(FILE *file) {
         else if (judgeLetter::isEqual(c)) {
             c = fgetc(file);
             if (judgeLetter::isEqual(c)) {
-                printf("Eq\n");
+                //printf("Eq\n");
+                returnToken.token = "Eq";
             } else {
-                printf("Assign\n");
+                //printf("Assign\n");
+                returnToken.token = "Assign";
                 fseek(file, -1, SEEK_CUR);
             }
         }
@@ -132,25 +178,35 @@ int lexicalAnalysis::getSymbol(FILE *file) {
 //            printf("%c\n", c);
 //        }
         else if (judgeLetter::isSemi(c))
-            printf("Semicolon\n");
+            //printf("Semicolon\n");
+            returnToken.token = "Semicolon";
         else if (judgeLetter::isLBracket(c))
-            printf("LPar\n");
+            //printf("LPar\n");
+            returnToken.token = "LPar";
         else if (judgeLetter::isRBracket(c))
-            printf("RPar\n");
+            //printf("RPar\n");
+            returnToken.token = "RPar";
         else if (judgeLetter::isLBracketLarge(c))
-            printf("LBrace\n");
+            //printf("LBrace\n");
+            returnToken.token = "LBrace";
         else if (judgeLetter::isRBracketLarge(c))
-            printf("RBrace\n");
+            //printf("RBrace\n");
+            returnToken.token = "RBrace";
         else if (judgeLetter::isPlus(c))
-            printf("Plus\n");
+            //printf("Plus\n");
+            returnToken.token = "Plus";
         else if (judgeLetter::isStar(c))
-            printf("Mult\n");
+            //printf("Mult\n");
+            returnToken.token = "Mult";
         else if (judgeLetter::isDiv(c))
-            printf("Div\n");
+            //printf("Div\n");
+            returnToken.token = "Div";
         else if (judgeLetter::isLt(c))
-            printf("Lt\n");
+            //printf("Lt\n");
+            returnToken.token = "Lt";
         else if (judgeLetter::isGt(c))
-            printf("Gt\n");
+            //printf("Gt\n");
+            returnToken.token = "Gt";
 
 //            // 如果是 " 则找到下一个引号然后输出
 //        else if (judgeLetter::isQuot(c) || judgeLetter::isQuot2(c)) {
@@ -211,9 +267,9 @@ int lexicalAnalysis::getSymbol(FILE *file) {
 
             // 如果是其他字符则输出错误
         else {
-            printf("Err\n");
-            return -1;
+            returnToken.type = "Error";
+            return returnToken;
         }
     }
-    return 0;
+    return returnToken;
 }
