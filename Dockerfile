@@ -1,4 +1,4 @@
-FROM frolvlad/alpine-gxx
+FROM gcc:10.2
 
 #RUN apt update && apt install gcc
 
