@@ -152,11 +152,14 @@ return_token getSymbol(FILE *file) {
                         c = fgetc(file);
                         if (judgeLetter::isDiv(c))
                             break;
+                        fseek(file, -1, SEEK_CUR);
                     }
                 }
             } else {
                 printf("/\n");
+                fseek(file, -1, SEEK_CUR);
             }
+            continue;
         }
 
             // 如果是 = 则判断下面的符号是什么
