@@ -7,6 +7,7 @@
 
 #include "vector"
 #include "judgeLetter.h"
+#include "cstring"
 #include "iostream"
 
 using namespace std;
