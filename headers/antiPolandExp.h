@@ -3,7 +3,9 @@
 //
 
 #include "cstdio"
+#include "cstdlib"
 #include "lexicalAnalysis.h"
+#include "grammarAnalysis.h"
 #include "stack"
 #include "queue"
 
@@ -12,6 +14,6 @@ using namespace std;
 #ifndef C_ANTIPOLANDEXP_H
 #define C_ANTIPOLANDEXP_H
 
-int calcAntiPoland(FILE *);
+string calcAntiPoland(FILE *);
 
 #endif //C_ANTIPOLANDEXP_H

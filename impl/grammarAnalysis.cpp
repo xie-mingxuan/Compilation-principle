@@ -5,9 +5,9 @@
 #include "../headers/grammarAnalysis.h"
 
 return_token word;
-int num;
 FILE *input;
 FILE *output;
+string express;
 
 void FuncDef(FILE *);
 
@@ -31,9 +31,13 @@ void FuncDef(FILE *file) {
     if (word.type != "Symbol" || word.token != "LPar")
         _exit_();
     word = getSymbol(file);
+    fprintf(output, "(");
+
     if (word.type != "Symbol" || word.token != "RPar")
         _exit_();
     word = getSymbol(file);
+    fprintf(output, ")");
+
     Block(file);
 
     word = getSymbol(file);
@@ -44,6 +48,7 @@ void FuncType(FILE *file) {
         _exit_();
 
     word = getSymbol(file);
+    fprintf(output, "define i32 ");
 }
 
 void Ident(FILE *file) {
@@ -51,16 +56,20 @@ void Ident(FILE *file) {
         _exit_();
 
     word = getSymbol(file);
+    fprintf(output, "@main");
 }
 
 void Block(FILE *file) {
     if (word.type != "Symbol" || word.token != "LBrace")
         _exit_();
     word = getSymbol(file);
+    fprintf(output, "{\n");
+
     Stmt(file);
     if (word.type != "Symbol" || word.token != "RBrace")
         _exit_();
     word = getSymbol(file);
+    fprintf(output, "}\n");
 }
 
 void Stmt(FILE *file) {
@@ -75,9 +84,9 @@ void Stmt(FILE *file) {
 //    if (word.type != "Symbol" || word.token != "Semicolon")
 //        _exit_();
 
-    num = calcAntiPoland(file);
+    express = calcAntiPoland(file);
 
-    word = getSymbol(file);
+    fprintf(output, "\tret i32 %s\n", express.c_str());
 }
 
 void CompUnit(FILE *in, FILE *out) {
@@ -89,8 +98,8 @@ void CompUnit(FILE *in, FILE *out) {
     if (word.type == "Error")
         _exit_();
 
-    fprintf(out, "define i32 @main(){\n");
-    printf("define i32 @main(){\n");
-    fprintf(out, "    ret i32 %d\n}", num);
-    printf("    ret i32 %d\n}", num);
+//    fprintf(out, "define i32 @main(){\n");
+//    printf("define i32 @main(){\n");
+//    fprintf(out, "    ret i32 %d\n}", num);
+//    printf("    ret i32 %d\n}", num);
 }
