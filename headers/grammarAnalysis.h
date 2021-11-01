@@ -6,6 +6,7 @@
 #define LAB1_GRAMMARANALYSIS_H
 
 #include "lexicalAnalysis.h"
+#include "antiPolandExp.h"
 #include "cstdio"
 #include "cstdlib"
 

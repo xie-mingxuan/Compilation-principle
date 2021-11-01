@@ -132,3 +132,7 @@ bool judgeLetter::isHexadecimalDigit(char c) {
         return true;
     return isDigit(c);
 }
+
+bool judgeLetter::isMod(char c) {
+    return c == '%';
+}

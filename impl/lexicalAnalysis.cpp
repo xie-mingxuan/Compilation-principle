@@ -203,12 +203,18 @@ return_token getSymbol(FILE *file) {
         else if (judgeLetter::isPlus(c))
             //printf("Plus\n");
             returnToken.token = "Plus";
+        else if (judgeLetter::isMinus(c))
+            //printf("Minus\n");
+            returnToken.token = "Minus";
         else if (judgeLetter::isStar(c))
             //printf("Mult\n");
             returnToken.token = "Mult";
         else if (judgeLetter::isDiv(c))
             //printf("Div\n");
             returnToken.token = "Div";
+        else if (judgeLetter::isMod(c))
+            //printf("Mod\n");
+            returnToken.token = "Mod";
         else if (judgeLetter::isLt(c))
             //printf("Lt\n");
             returnToken.token = "Lt";

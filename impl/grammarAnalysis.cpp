@@ -66,13 +66,16 @@ void Block(FILE *file) {
 void Stmt(FILE *file) {
     if (word.type != "Ident" || word.token != "Return")
         _exit_();
-    word = getSymbol(file);
-    if (word.type != "Number")
-        _exit_();
-    num = word.num;
-    word = getSymbol(file);
-    if (word.type != "Symbol" || word.token != "Semicolon")
-        _exit_();
+
+//    word = getSymbol(file);
+//    if (word.type != "Number")
+//        _exit_();
+//    num = word.num;
+//    word = getSymbol(file);
+//    if (word.type != "Symbol" || word.token != "Semicolon")
+//        _exit_();
+
+    num = calcAntiPoland(file);
 
     word = getSymbol(file);
 }

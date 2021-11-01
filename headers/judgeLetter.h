@@ -69,6 +69,8 @@ public:
 
     static bool isHexadecimalDigit(char c);
 
+    static bool isMod(char c);
+
 };
 
 
