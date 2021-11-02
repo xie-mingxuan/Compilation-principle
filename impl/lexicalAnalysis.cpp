@@ -102,7 +102,7 @@ return_token getSymbol(FILE *file) {
                             }
                             break;
                         }
-                    } else {
+                    } else if (isdigit(c)) {
                         base = 8;
                         while ((c = fgetc(file)) != EOF) {
                             if (judgeLetter::isOctalDigit(c)) {

@@ -49,7 +49,7 @@ void pop_and_print() {
     else if (op.token == "Div")
         fprintf(output, "sdiv i32 ");
     else if (op.token == "Mod")
-        fprintf(output, "mod i32 ");
+        fprintf(output, "sdiv i32 ");
     else exit(-1);
 
     if (!x1.is_variable)
@@ -61,6 +61,23 @@ void pop_and_print() {
         fprintf(output, "%d\n", x2.token.num);
     else
         fprintf(output, "%s\n", x2.variable.c_str());
+
+    if (op.token == "Mod") {
+        fprintf(output, "\t%%x%d = mul i32 ", exp_num + 1);
+        if (!x2.is_variable)
+            fprintf(output, "%d, ", x2.token.num);
+        else
+            fprintf(output, "%s, ", x2.variable.c_str());
+        fprintf(output, "%%x%d\n", exp_num);
+
+        fprintf(output, "\t%%x%d = sub i32 ", exp_num + 2);
+        if (!x1.is_variable)
+            fprintf(output, "%d, ", x1.token.num);
+        else
+            fprintf(output, "%s, ", x1.variable.c_str());
+        fprintf(output, "%%x%d\n", exp_num + 1);
+        exp_num = exp_num + 2;
+    }
     number_stack_elem res;
     res.is_variable = true;
     stringstream stream;
