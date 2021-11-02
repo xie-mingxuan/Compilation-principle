@@ -8,6 +8,6 @@ COPY ./headers/* ./headers/
 COPY ./impl/* ./impl/
 COPY main.cpp ./
 
-RUN g++ ./headers/judgeLetter.h ./headers/lexicalAnalysis.h ./headers/grammarAnalysis.h ./impl/judgeLetter.cpp ./impl/lexicalAnalysis.cpp ./impl/grammarAnalysis.cpp main.cpp -o main
+RUN g++ ./headers/* ./impl/* main.cpp -o main
 
 RUN chmod +x main

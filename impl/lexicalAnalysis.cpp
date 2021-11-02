@@ -156,8 +156,9 @@ return_token getSymbol(FILE *file) {
                     }
                 }
             } else {
-                printf("/\n");
                 fseek(file, -1, SEEK_CUR);
+                returnToken.token = "Div";
+                return returnToken;
             }
             continue;
         }
@@ -209,9 +210,6 @@ return_token getSymbol(FILE *file) {
         else if (judgeLetter::isStar(c))
             //printf("Mult\n");
             returnToken.token = "Mult";
-        else if (judgeLetter::isDiv(c))
-            //printf("Div\n");
-            returnToken.token = "Div";
         else if (judgeLetter::isMod(c))
             //printf("Mod\n");
             returnToken.token = "Mod";
