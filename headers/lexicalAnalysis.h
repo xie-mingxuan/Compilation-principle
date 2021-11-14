@@ -12,10 +12,18 @@
 
 using namespace std;
 
-typedef struct return_token {
+typedef struct x {
     string type;
     string token;
-    int num;
+    int num = 0;
+
+    bool operator==(const x &b) const {
+        return this->type == b.type && this->token == b.token && this->num == b.num;
+    }
+
+    bool operator!=(const x &b) const {
+        return !this->operator==(b);
+    }
 } return_token;
 
 return_token getSymbol(FILE *file);
