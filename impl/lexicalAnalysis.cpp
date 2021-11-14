@@ -40,8 +40,14 @@ return_token getSymbol(FILE *file) {
 	while ((c = fgetc(file)) != EOF) {
 
 		// 读取字符，如果是空字符则跳过
-		if (judgeLetter::isSpace(c) || judgeLetter::isNewline(c) || judgeLetter::isTab(c))
+		if (judgeLetter::isSpace(c) || judgeLetter::isNewline(c) || judgeLetter::isTab(c)) {
+			if (judgeLetter::isSpace(c))
+				printf(" ");
+			else if (judgeLetter::isNewline(c))
+				printf("\n");
+			else printf("\t");
 			continue;
+		}
 
 			// 读取字符，如果是字母则拼接字符串
 		else if (judgeLetter::isLetter(c) || judgeLetter::isUnderline(c)) {
@@ -83,6 +89,7 @@ return_token getSymbol(FILE *file) {
 			//printf("Ident(%s)\n", tokenStr.c_str());
 			clearToken();
 			fseek(file, -1, SEEK_CUR);
+			printf("%s", tokenStr.c_str());
 			return returnToken;
 		}
 
@@ -127,7 +134,7 @@ return_token getSymbol(FILE *file) {
 			returnToken.num = transNum(base);
 			string num = "";
 			for (char i: token) num += i;
-			printf("%s\n", num.c_str());
+			printf("%s", num.c_str());
 			clearToken();
 			fseek(file, -1, SEEK_CUR);
 			return returnToken;
@@ -167,10 +174,10 @@ return_token getSymbol(FILE *file) {
 		else if (judgeLetter::isEqual(c)) {
 			c = fgetc(file);
 			if (judgeLetter::isEqual(c)) {
-				//printf("Eq\n");
+				printf("==");
 				returnToken.token = "Eq";
 			} else {
-				//printf("Assign\n");
+				printf("=");
 				returnToken.token = "Assign";
 				fseek(file, -1, SEEK_CUR);
 			}
@@ -284,7 +291,25 @@ return_token getSymbol(FILE *file) {
 			returnToken.type = "Error";
 			return returnToken;
 		}
+		if (judgeLetter::isColon(c) || judgeLetter::isComma(c) || judgeLetter::isLBracket(c) ||
+			judgeLetter::isRBracket(c) || judgeLetter::isPlus(c) || judgeLetter::isMinus(c) ||
+			judgeLetter::isStar(c) || judgeLetter::isSemi(c) || judgeLetter::isEqual(c) ||
+			judgeLetter::isLBracketMid(c) || judgeLetter::isRBracketMid(c) ||
+			judgeLetter::isLBracketLarge(c) || judgeLetter::isRBracketLarge(c) ||
+			judgeLetter::isDot(c) || judgeLetter::isUnderline(c) || judgeLetter::isExcl(c) ||
+			judgeLetter::isVert(c)) {
+			printf("%c", c);
+		}
 		return returnToken;
+	}
+	if (judgeLetter::isColon(c) || judgeLetter::isComma(c) || judgeLetter::isLBracket(c) ||
+		judgeLetter::isRBracket(c) || judgeLetter::isPlus(c) || judgeLetter::isMinus(c) ||
+		judgeLetter::isStar(c) || judgeLetter::isSemi(c) || judgeLetter::isEqual(c) ||
+		judgeLetter::isLBracketMid(c) || judgeLetter::isRBracketMid(c) ||
+		judgeLetter::isLBracketLarge(c) || judgeLetter::isRBracketLarge(c) ||
+		judgeLetter::isDot(c) || judgeLetter::isUnderline(c) || judgeLetter::isExcl(c) ||
+		judgeLetter::isVert(c)) {
+		printf("%c", c);
 	}
 	return returnToken;
 }
