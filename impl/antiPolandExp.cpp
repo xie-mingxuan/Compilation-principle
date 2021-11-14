@@ -5,12 +5,6 @@
 #include "../headers/antiPolandExp.h"
 #include "sstream"
 
-typedef struct {
-	bool is_variable;
-	return_token token;
-	string variable;
-} number_stack_elem;
-
 extern return_token word;
 extern FILE *input;
 extern FILE *output;
@@ -84,7 +78,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 	number_stack.push(res);
 }
 
-string calcAntiPoland(FILE *file) {
+number_stack_elem calcAntiPoland(FILE *file) {
 	bool last_word_is_operator = true;
 	bool next_word_can_operator = true;
 	stack<number_stack_elem> number_stack;
@@ -200,7 +194,12 @@ string calcAntiPoland(FILE *file) {
 				if (word.type != SYMBOL || word.token != "LPar")
 					exit(-1);
 
-				fprintf(output, "call void @putint(i32 %s)\n", calcAntiPoland(file).c_str());
+				number_stack_elem res = calcAntiPoland(file);
+				fprintf(output, "call void @putint(i32 ");
+				if(res.is_variable)
+					fprintf(output,"%s)\n", res.variable.c_str());
+				else
+					fprintf(output, "%d\n)", res.token.num);
 
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
@@ -213,7 +212,12 @@ string calcAntiPoland(FILE *file) {
 				if (word.type != SYMBOL || word.token != "LPar")
 					exit(-1);
 
-				fprintf(output, "call void @putch(i32 %s)\n", calcAntiPoland(file).c_str());
+				number_stack_elem res = calcAntiPoland(file);
+				fprintf(output, "call void @putch(i32 ");
+				if(res.is_variable)
+					fprintf(output,"%s)\n", res.variable.c_str());
+				else
+					fprintf(output, "%d\n)", res.token.num);
 
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
@@ -227,11 +231,13 @@ string calcAntiPoland(FILE *file) {
 		word = getSymbol(file);
 	}
 	//word = getSymbol(file);
-	if (number_stack.top().is_variable) return number_stack.top().variable;
-	if(number_stack.top().token.token != "")
-		return number_stack.top().token.token;
 
-	stringstream stream;
-	stream << number_stack.top().token.num;
-	return stream.str();
+	return number_stack.top();
+//	if (number_stack.top().is_variable) return number_stack.top().variable;
+//	if(number_stack.top().token.token != "")
+//		return number_stack.top().token.token;
+//
+//	stringstream stream;
+//	stream << number_stack.top().token.num;
+//	return stream.str();
 }

@@ -18,15 +18,15 @@ void BType(FILE *);
 
 void ConstDef(FILE *);
 
-void ConstInitVal(FILE *);
+number_stack_elem ConstInitVal(FILE *);
 
-void ConstExp(FILE *);
+number_stack_elem ConstExp(FILE *);
 
 void VarDecl(FILE *);
 
 void VarDef(FILE *);
 
-string InitVal(FILE *);
+number_stack_elem InitVal(FILE *);
 
 void FuncDef(FILE *);
 
@@ -38,7 +38,7 @@ void BlockItem(FILE *);
 
 void Stmt(FILE *);
 
-string Exp(FILE *);
+number_stack_elem Exp(FILE *);
 
 void LVal(FILE *);
 
@@ -171,21 +171,24 @@ void ConstDef(FILE *file) {
 
 	if (word.type != SYMBOL || word.token != "Assign")
 		exit_();
-	fprintf(output, "store i32 %%%s, i32* ", i.c_str());
 	word = getSymbol(file);
 
-	ConstInitVal(file);
+	number_stack_elem res = ConstInitVal(file);
+	if (res.is_variable)
+		fprintf(output, "store i32 %%%s, i32* %s", i.c_str(), res.variable.c_str());
+	else
+		fprintf(output, "store i32 %%%s, i32 %d", i.c_str(), res.token.num);
 }
 
-void ConstInitVal(FILE *file) {
-	ConstExp(file);
+number_stack_elem ConstInitVal(FILE *file) {
+	return ConstExp(file);
 }
 
 /**
  * 这个函数用来计算表达式的值，最后返回表达式的值或对应的储存元素
  */
-void ConstExp(FILE *file) {
-	fprintf(output, "%s\n", calcAntiPoland(file).c_str());
+number_stack_elem ConstExp(FILE *file) {
+	return calcAntiPoland(file);
 }
 
 void VarDecl(FILE *file) {
@@ -225,15 +228,18 @@ void VarDef(FILE *file) {
 		return;
 
 	word = getSymbol(file);
-	string res = InitVal(file);
-	fprintf(output, "store i32 %%%s, i32* %s\n", i.c_str(), res.c_str());
+	number_stack_elem res = InitVal(file);
+	if (res.is_variable)
+		fprintf(output, "store i32 %%%s, i32* %s\n", i.c_str(), res.variable.c_str());
+	else
+		fprintf(output, "store i32 %%%s, i32 %d\n", i.c_str(), res.token.num);
 }
 
-string InitVal(FILE *file) {
+number_stack_elem InitVal(FILE *file) {
 	return Exp(file);
 }
 
-string Exp(FILE *file) {
+number_stack_elem Exp(FILE *file) {
 	//fprintf(output, "%s\n", calcAntiPoland(file).c_str());
 	return calcAntiPoland(file);
 }
@@ -243,9 +249,10 @@ void Stmt(FILE *file) {
 		// 返回语句
 		if (word.token == "Return") {
 			word = getSymbol(file);
-			express = calcAntiPoland(file);
-
-			fprintf(output, "ret i32 %s\n", express.c_str());
+			number_stack_elem res = calcAntiPoland(file);
+			if (res.is_variable)
+				fprintf(output, "ret i32 %s\n", res.variable.c_str());
+			else fprintf(output, "ret i32 %d\n", res.token.num);
 
 			if (word.type != SYMBOL || word.token != "Semicolon")
 				exit_();
@@ -256,8 +263,11 @@ void Stmt(FILE *file) {
 			if (word.type != SYMBOL || word.token != "LPar")
 				exit(-1);
 
-			string res = calcAntiPoland(file);
-			fprintf(output, "call void @putch(i32 %s)\n", res.c_str());
+			number_stack_elem res = calcAntiPoland(file);
+			if (res.is_variable)
+				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
+			else
+				fprintf(output, "call void @putch(i32 %d)\n", res.token.num);
 
 			if (word.type != SYMBOL || word.token != "Semicolon")
 				exit(-1);
@@ -269,8 +279,11 @@ void Stmt(FILE *file) {
 			if (word.type != SYMBOL || word.token != "LPar")
 				exit(-1);
 
-			string res = calcAntiPoland(file);
-			fprintf(output, "call void @putint(i32 %s)\n", res.c_str());
+			number_stack_elem res = calcAntiPoland(file);
+			if (res.is_variable)
+				fprintf(output, "call void @putint(i32 %s)\n", res.variable.c_str());
+			else
+				fprintf(output, "call void @putint(i32 %d)\n", res.token.num);
 
 			if (word.type != SYMBOL || word.token != "Semicolon")
 				exit(-1);
@@ -300,8 +313,12 @@ void Stmt(FILE *file) {
 			exit_();
 		}
 		word = getSymbol(file);
-		string res = calcAntiPoland(file);
-		fprintf(output, "%%%s = %s\n", x.token.c_str(), res.c_str());
+		number_stack_elem res = calcAntiPoland(file);
+		if (res.is_variable)
+			fprintf(output, "%%%s = %s\n", x.token.c_str(), res.variable.c_str());
+		else
+			fprintf(output, "%%%s = %d\n", x.token.c_str(), res.token.num);
+
 		if (word.type != SYMBOL || word.token != "Semicolon")
 			exit_();
 		word = getSymbol(file);
