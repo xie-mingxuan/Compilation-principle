@@ -7,7 +7,6 @@
 return_token word;
 FILE *input;
 FILE *output;
-string express;
 list<variable_list_elem> variable_list; // 这是所有定义的变量
 
 void Decl(FILE *);
@@ -155,7 +154,7 @@ void ConstDecl(FILE *file) {
 void ConstDef(FILE *file) {
 	if (word.type != IDENT)
 		exit_();
-	fprintf(output, "%%%s = alloca i32\n", word.token.c_str());
+	fprintf(output, "%%%s_pointer = alloca i32\n", word.token.c_str());
 
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
 	if (list_contains(word))
@@ -175,9 +174,10 @@ void ConstDef(FILE *file) {
 
 	number_stack_elem res = ConstInitVal(file);
 	if (res.is_variable)
-		fprintf(output, "store i32 %s, i32* %%%s\n", res.variable.c_str(), i.c_str());
+		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
 	else
-		fprintf(output, "store i32 %d, i32* %%%s\n", res.token.num, i.c_str());
+		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
+	fprintf(output, "%%%s = load i32, i32* %%%s_pointer\n\n", i.c_str(), i.c_str());
 }
 
 number_stack_elem ConstInitVal(FILE *file) {
@@ -211,7 +211,7 @@ void VarDecl(FILE *file) {
 void VarDef(FILE *file) {
 	if (word.type != IDENT)
 		exit_();
-	fprintf(output, "%%%s = alloca i32\n", word.token.c_str());
+	fprintf(output, "%%%s_pointer = alloca i32\n", word.token.c_str());
 
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
 	if (list_contains(word))
@@ -230,9 +230,10 @@ void VarDef(FILE *file) {
 	word = getSymbol(file);
 	number_stack_elem res = InitVal(file);
 	if (res.is_variable)
-		fprintf(output, "store i32 %s, i32* %%%s\n", res.variable.c_str(), i.c_str());
+		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
 	else
-		fprintf(output, "store i32 %d, i32* %%%s\n", res.token.num, i.c_str());
+		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
+	fprintf(output, "%%%s = load i32, i32* %%%s_pointer\n\n", i.c_str(), i.c_str());
 }
 
 number_stack_elem InitVal(FILE *file) {
@@ -315,9 +316,10 @@ void Stmt(FILE *file) {
 		word = getSymbol(file);
 		number_stack_elem res = calcAntiPoland(file);
 		if (res.is_variable)
-			fprintf(output, "%%%s = i32 %s\n", x.token.c_str(), res.variable.c_str());
+			fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), x.token.c_str());
 		else
-			fprintf(output, "%%%s = i32 %d\n", x.token.c_str(), res.token.num);
+			fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, x.token.c_str());
+		fprintf(output, "%%%s = load i32, i32* %%%s_pointer\n\n", x.token.c_str(), x.token.c_str());
 
 		if (word.type != SYMBOL || word.token != "Semicolon")
 			exit_();
