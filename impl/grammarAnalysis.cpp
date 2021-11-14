@@ -175,9 +175,9 @@ void ConstDef(FILE *file) {
 
 	number_stack_elem res = ConstInitVal(file);
 	if (res.is_variable)
-		fprintf(output, "store i32 %%%s, i32* %s", i.c_str(), res.variable.c_str());
+		fprintf(output, "store i32 %s, i32* %%%s\n", res.variable.c_str(), i.c_str());
 	else
-		fprintf(output, "store i32 %%%s, i32 %d", i.c_str(), res.token.num);
+		fprintf(output, "store i32 %d, i32* %%%s\n", res.token.num, i.c_str());
 }
 
 number_stack_elem ConstInitVal(FILE *file) {
@@ -230,9 +230,9 @@ void VarDef(FILE *file) {
 	word = getSymbol(file);
 	number_stack_elem res = InitVal(file);
 	if (res.is_variable)
-		fprintf(output, "store i32 %%%s, i32* %s\n", i.c_str(), res.variable.c_str());
+		fprintf(output, "store i32 %s, i32* %%%s\n", res.variable.c_str(), i.c_str());
 	else
-		fprintf(output, "store i32 %%%s, i32 %d\n", i.c_str(), res.token.num);
+		fprintf(output, "store i32 %d, i32* %%%s\n", res.token.num, i.c_str());
 }
 
 number_stack_elem InitVal(FILE *file) {
@@ -315,9 +315,9 @@ void Stmt(FILE *file) {
 		word = getSymbol(file);
 		number_stack_elem res = calcAntiPoland(file);
 		if (res.is_variable)
-			fprintf(output, "%%%s = %s\n", x.token.c_str(), res.variable.c_str());
+			fprintf(output, "%%%s = i32 %s\n", x.token.c_str(), res.variable.c_str());
 		else
-			fprintf(output, "%%%s = %d\n", x.token.c_str(), res.token.num);
+			fprintf(output, "%%%s = i32 %d\n", x.token.c_str(), res.token.num);
 
 		if (word.type != SYMBOL || word.token != "Semicolon")
 			exit_();
