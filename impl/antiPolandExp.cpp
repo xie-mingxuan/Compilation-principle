@@ -8,7 +8,7 @@
 extern return_token word;
 extern FILE *input;
 extern FILE *output;
-int exp_num = 0;
+int exp_num = 1;
 
 int priority(const return_token &c) {
 	if (c.token == "Plus" || c.token == "Minus")
