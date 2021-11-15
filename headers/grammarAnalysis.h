@@ -19,6 +19,7 @@ using namespace std;
 typedef struct {
 	return_token token;
 	bool is_const = false;
+	string saved_pointer;
 	string saved_register;
 } variable_list_elem;
 
@@ -45,5 +46,10 @@ void set_register(const return_token &, const string &save_register);
  * 获取当前 token 的寄存器位置
  */
 string get_register(const return_token &);
+
+/**
+ * 获取当前 token 的指针寄存器位置
+ */
+string get_pointer(const return_token &);
 
 #endif //LAB1_GRAMMARANALYSIS_H

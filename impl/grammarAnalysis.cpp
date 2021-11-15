@@ -156,7 +156,6 @@ void ConstDecl(FILE *file) {
 void ConstDef(FILE *file) {
 	if (word.type != IDENT)
 		exit_();
-	fprintf(output, "%%%s_pointer = alloca i32\n", word.token.c_str());
 
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
 	if (list_contains(word))
@@ -164,7 +163,12 @@ void ConstDef(FILE *file) {
 	variable_list_elem elem;
 	elem.token = word;
 	elem.is_const = true;
+	stringstream stream;
+	stream << exp_num++;
+	elem.saved_pointer = "%" + stream.str();
 	variable_list.push_back(elem);
+	fprintf(output, "%s = alloca i32\t\t; define const variable_pointer '%s' at %s\n", elem.saved_pointer.c_str(),
+			word.token.c_str(), elem.saved_pointer.c_str());
 
 	return_token x = word;
 	string i = word.token;
@@ -177,14 +181,14 @@ void ConstDef(FILE *file) {
 
 	number_stack_elem res = ConstInitVal(file);
 	if (res.is_variable)
-		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
+		fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
 	else
-		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
-	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\t; define const variable '%s'\n\n", exp_num, i.c_str(),
+		fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
+	fprintf(output, "%%%d = load i32, i32* %s\t\t; define const variable '%s'\n\n", exp_num, get_pointer(x).c_str(),
 			i.c_str());
-	stringstream stream;
-	stream << exp_num++;
-	set_register(x, "%" + stream.str());
+	stringstream stream1;
+	stream1 << exp_num++;
+	set_register(x, "%" + stream1.str());
 
 }
 
@@ -219,14 +223,18 @@ void VarDecl(FILE *file) {
 void VarDef(FILE *file) {
 	if (word.type != IDENT)
 		exit_();
-	fprintf(output, "%%%s_pointer = alloca i32\n", word.token.c_str());
 
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
 	if (list_contains(word))
 		exit_();
 	variable_list_elem elem;
 	elem.token = word;
+	stringstream stream;
+	stream << exp_num++;
+	elem.saved_pointer = "%" + stream.str();
 	variable_list.push_back(elem);
+	fprintf(output, "%s = alloca i32\t\t; define variable_point '%s' at %s\n", elem.saved_pointer.c_str(),
+			word.token.c_str(), elem.saved_pointer.c_str());
 
 	return_token x = word;
 	string i = word.token;
@@ -239,13 +247,13 @@ void VarDef(FILE *file) {
 	word = getSymbol(file);
 	number_stack_elem res = InitVal(file);
 	if (res.is_variable)
-		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
+		fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
 	else
-		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
-	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\t; define variable '%s'\n\n", exp_num, i.c_str(), i.c_str());
-	stringstream stream;
-	stream << exp_num++;
-	set_register(x, "%" + stream.str());
+		fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
+	fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n\n", exp_num, get_pointer(x).c_str(), i.c_str());
+	stringstream stream1;
+	stream1 << exp_num++;
+	set_register(x, "%" + stream1.str());
 }
 
 number_stack_elem InitVal(FILE *file) {
@@ -328,10 +336,10 @@ void Stmt(FILE *file) {
 		word = getSymbol(file);
 		number_stack_elem res = calcAntiPoland(file);
 		if (res.is_variable)
-			fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), x.token.c_str());
+			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
 		else
-			fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, x.token.c_str());
-		fprintf(output, "%%%d = load i32, i32* %%%s_pointer\t; set variable '%s'\n\n", exp_num, x.token.c_str(),
+			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
+		fprintf(output, "%%%d = load i32, i32* %s\t\t; set variable '%s'\n\n", exp_num, get_pointer(x).c_str(),
 				x.token.c_str());
 		stringstream stream;
 		stream << exp_num++;
@@ -403,5 +411,12 @@ string get_register(const return_token &token) {
 			}
 			return saved_token.saved_register;
 		}
+	}
+}
+
+string get_pointer(const return_token &token) {
+	for (auto &saved_token: variable_list) {
+		if (saved_token.token == token)
+			return saved_token.saved_pointer;
 	}
 }
