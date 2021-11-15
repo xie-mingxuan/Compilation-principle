@@ -8,7 +8,7 @@
 extern return_token word;
 extern FILE *input;
 extern FILE *output;
-int exp_num = 1;
+int exp_num = 0;
 
 int priority(const return_token &c) {
 	if (c.token == "Plus" || c.token == "Minus")
@@ -145,7 +145,7 @@ number_stack_elem calcAntiPoland(FILE *file) {
 			if (list_contains(word)) {
 				number_stack_elem x;
 				x.is_variable = true;
-				x.variable = "%" + word.token;
+				x.variable = get_register(word);
 				number_stack.push(x);
 				last_word_is_operator = false;
 				next_word_can_operator = true;
@@ -196,8 +196,8 @@ number_stack_elem calcAntiPoland(FILE *file) {
 
 				number_stack_elem res = calcAntiPoland(file);
 				fprintf(output, "call void @putint(i32 ");
-				if(res.is_variable)
-					fprintf(output,"%s)\n", res.variable.c_str());
+				if (res.is_variable)
+					fprintf(output, "%s)\n", res.variable.c_str());
 				else
 					fprintf(output, "%d\n)", res.token.num);
 
@@ -214,8 +214,8 @@ number_stack_elem calcAntiPoland(FILE *file) {
 
 				number_stack_elem res = calcAntiPoland(file);
 				fprintf(output, "call void @putch(i32 ");
-				if(res.is_variable)
-					fprintf(output,"%s)\n", res.variable.c_str());
+				if (res.is_variable)
+					fprintf(output, "%s)\n", res.variable.c_str());
 				else
 					fprintf(output, "%d\n)", res.token.num);
 

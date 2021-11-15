@@ -19,6 +19,7 @@ using namespace std;
 typedef struct {
 	return_token token;
 	bool is_const = false;
+	string saved_register;
 } variable_list_elem;
 
 /**
@@ -34,5 +35,15 @@ bool list_contains(const return_token &);
 bool is_variable_const(const return_token &);
 
 void CompUnit(FILE *in, FILE *out);
+
+/**
+ * 设置符号表中的变量的储存位置
+ */
+void set_register(const return_token &, const string &save_register);
+
+/**
+ * 获取当前 token 的寄存器位置
+ */
+string get_register(const return_token &);
 
 #endif //LAB1_GRAMMARANALYSIS_H

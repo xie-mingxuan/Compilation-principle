@@ -2,12 +2,14 @@
 // Created by 谢铭轩 on 2021/10/14.
 //
 
+#include <sstream>
 #include "../headers/grammarAnalysis.h"
 
 return_token word;
 FILE *input;
 FILE *output;
 list<variable_list_elem> variable_list; // 这是所有定义的变量
+extern int exp_num;
 
 void Decl(FILE *);
 
@@ -164,6 +166,7 @@ void ConstDef(FILE *file) {
 	elem.is_const = true;
 	variable_list.push_back(elem);
 
+	return_token x = word;
 	string i = word.token;
 
 	word = getSymbol(file);
@@ -177,7 +180,11 @@ void ConstDef(FILE *file) {
 		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
 	else
 		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
-	fprintf(output, "%%%s = load i32, i32* %%%s_pointer\n\n", i.c_str(), i.c_str());
+	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\n\n", exp_num, i.c_str());
+	stringstream stream;
+	stream << exp_num++;
+	set_register(x, "%" + stream.str());
+
 }
 
 number_stack_elem ConstInitVal(FILE *file) {
@@ -220,6 +227,7 @@ void VarDef(FILE *file) {
 	elem.token = word;
 	variable_list.push_back(elem);
 
+	return_token x = word;
 	string i = word.token;
 
 	word = getSymbol(file);
@@ -233,7 +241,10 @@ void VarDef(FILE *file) {
 		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
 	else
 		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
-	fprintf(output, "%%%s = load i32, i32* %%%s_pointer\n\n", i.c_str(), i.c_str());
+	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\n\n", exp_num, i.c_str());
+	stringstream stream;
+	stream << exp_num++;
+	set_register(x, "%" + stream.str());
 }
 
 number_stack_elem InitVal(FILE *file) {
@@ -319,7 +330,10 @@ void Stmt(FILE *file) {
 			fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), x.token.c_str());
 		else
 			fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, x.token.c_str());
-		fprintf(output, "%%%s = load i32, i32* %%%s_pointer\n\n", x.token.c_str(), x.token.c_str());
+		fprintf(output, "%%%d = load i32, i32* %%%s_pointer\n\n", exp_num, x.token.c_str());
+		stringstream stream;
+		stream << exp_num++;
+		set_register(x, "%" + stream.str());
 
 		if (word.type != SYMBOL || word.token != "Semicolon")
 			exit_();
@@ -367,4 +381,25 @@ bool is_variable_const(const return_token &token) {
 			return saved_token.is_const;
 	}
 	return false;
+}
+
+void set_register(const return_token &token, const string &save_register) {
+	for (auto &saved_token: variable_list) {
+		if (saved_token.token == token) {
+			saved_token.saved_register = save_register;
+			return;
+		}
+	}
+}
+
+string get_register(const return_token &token) {
+	for(auto &saved_token : variable_list) {
+		if(saved_token.token == token) {
+			if(saved_token.saved_register.empty()) {
+				printf("%s has never been initialized!\n", token.token.c_str());
+				exit(-1);
+			}
+			return saved_token.saved_register;
+		}
+	}
 }
