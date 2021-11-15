@@ -78,7 +78,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 	number_stack.push(res);
 }
 
-number_stack_elem calcAntiPoland(FILE *file) {
+number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 	bool last_word_is_operator = true;
 	bool next_word_can_operator = true;
 	stack<number_stack_elem> number_stack;
@@ -143,6 +143,11 @@ number_stack_elem calcAntiPoland(FILE *file) {
 		} else if (word.type == IDENT) {
 			// 判断是否为函数调用或变量调用，如果不是就报错了
 			if (list_contains(word)) {
+				if(is_const_define)
+					if(!is_variable_const(word)) {
+						printf("\n'%s' is not a const variable value!\n", word.token.c_str());
+						exit(-1);
+					}
 				number_stack_elem x;
 				x.is_variable = true;
 				x.variable = get_register(word);

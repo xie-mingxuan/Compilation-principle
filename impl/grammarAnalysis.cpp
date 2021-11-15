@@ -180,7 +180,8 @@ void ConstDef(FILE *file) {
 		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
 	else
 		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
-	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\n\n", exp_num, i.c_str());
+	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\t; define const variable '%s'\n\n", exp_num, i.c_str(),
+			i.c_str());
 	stringstream stream;
 	stream << exp_num++;
 	set_register(x, "%" + stream.str());
@@ -195,7 +196,7 @@ number_stack_elem ConstInitVal(FILE *file) {
  * 这个函数用来计算表达式的值，最后返回表达式的值或对应的储存元素
  */
 number_stack_elem ConstExp(FILE *file) {
-	return calcAntiPoland(file);
+	return calcAntiPoland(file, true);
 }
 
 void VarDecl(FILE *file) {
@@ -241,7 +242,7 @@ void VarDef(FILE *file) {
 		fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), i.c_str());
 	else
 		fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, i.c_str());
-	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\n\n", exp_num, i.c_str());
+	fprintf(output, "%%%d = load i32, i32* %%%s_pointer\t; define variable '%s'\n\n", exp_num, i.c_str(), i.c_str());
 	stringstream stream;
 	stream << exp_num++;
 	set_register(x, "%" + stream.str());
@@ -330,7 +331,8 @@ void Stmt(FILE *file) {
 			fprintf(output, "store i32 %s, i32* %%%s_pointer\n", res.variable.c_str(), x.token.c_str());
 		else
 			fprintf(output, "store i32 %d, i32* %%%s_pointer\n", res.token.num, x.token.c_str());
-		fprintf(output, "%%%d = load i32, i32* %%%s_pointer\n\n", exp_num, x.token.c_str());
+		fprintf(output, "%%%d = load i32, i32* %%%s_pointer\t; set variable '%s'\n\n", exp_num, x.token.c_str(),
+				x.token.c_str());
 		stringstream stream;
 		stream << exp_num++;
 		set_register(x, "%" + stream.str());
@@ -393,9 +395,9 @@ void set_register(const return_token &token, const string &save_register) {
 }
 
 string get_register(const return_token &token) {
-	for(auto &saved_token : variable_list) {
-		if(saved_token.token == token) {
-			if(saved_token.saved_register.empty()) {
+	for (auto &saved_token: variable_list) {
+		if (saved_token.token == token) {
+			if (saved_token.saved_register.empty()) {
 				printf("%s has never been initialized!\n", token.token.c_str());
 				exit(-1);
 			}
