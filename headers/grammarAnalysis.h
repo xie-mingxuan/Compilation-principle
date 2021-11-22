@@ -15,7 +15,7 @@
 #define SYMBOL "Symbol"
 #define IF_TRUE 1
 #define IF_FALSE 2
-#define FINAL 3
+#define IF_FINAL 3
 
 using namespace std;
 
@@ -64,6 +64,11 @@ string get_pointer(const return_token &);
  * 在代码块中刷新符号表
  */
 void print_variable_table();
+
+/**
+ * 打印下一个代码块
+ */
+void print_code_block(undefined_code_block_stack_elem);
 
 void Decl(FILE *);
 

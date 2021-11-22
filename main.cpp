@@ -13,10 +13,10 @@ int main(int argc, char **argv) {
 	CompUnit(in, out);
 	fclose(in);
 	fclose(out);
-	out = fopen(argv[2], "r");
-	char c;
-	while ((c = fgetc(out)) != EOF) {
-		putchar(c);
-	}
+//	out = fopen(argv[2], "r");
+//	char c;
+//	while ((c = fgetc(out)) != EOF) {
+//		putchar(c);
+//	}
 	return 0;
 }

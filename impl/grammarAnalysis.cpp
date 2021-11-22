@@ -11,6 +11,7 @@ FILE *output;
 list<variable_list_elem> variable_list; // 这是所有定义的变量
 extern int register_num;
 bool is_from_if_else = false;
+int code_block_num = 1;
 stack<undefined_code_block_stack_elem> undefined_code_block_stack;
 
 void exit_() {
@@ -242,7 +243,8 @@ void Stmt(FILE *file) {
 			if (is_from_if_else) {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
-				fprintf(output, "\n\n\n%d:\t; 定义 else if 语句\n", elem.register_num);
+//				fprintf(output, "\n\n\n%d:\t; 定义 else if 语句\n", elem.register_num);
+				print_code_block(elem);
 				print_variable_table();
 			}
 
@@ -269,14 +271,17 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
 				undefined_code_block_stack_elem final_elem = undefined_code_block_stack.top();
-				fprintf(output, "\n\n\n%d:\t; 定义缺省的 else 代码块\n", elem.register_num);
-				fprintf(output, "br label %%%d\n", final_elem.register_num);
+//				fprintf(output, "\n\n\n%d:\t; 定义缺省的 else 代码块\n", elem.register_num);
+				print_code_block(elem);
+//				fprintf(output, "br label %%%d\n", final_elem.register_num);
+				print_code_block(final_elem);
 			}
 
 			if (!undefined_code_block_stack.empty()) {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
-				fprintf(output, "\n\n\n%d:\t; 定义 if-else 语句之后的代码块\n", elem.register_num);
+//				fprintf(output, "\n\n\n%d:\t; 定义 if-else 语句之后的代码块\n", elem.register_num);
+				print_code_block(elem);
 				print_variable_table();
 			}
 			Stmt(file);
@@ -340,7 +345,8 @@ void Stmt(FILE *file) {
 		if (is_from_if_else) {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
-			fprintf(output, "\n\n\n%%%d:\t; 定义省略了大括号的赋值语句\n", elem.register_num);
+//			fprintf(output, "\n\n\n%%%d:\t; 定义省略了大括号的赋值语句\n", elem.register_num);
+			print_code_block(elem);
 			print_variable_table();
 		}
 		word = get_symbol(file);
@@ -362,12 +368,13 @@ void Stmt(FILE *file) {
 		if (is_from_if_else) {
 			stack<undefined_code_block_stack_elem> temp;
 			undefined_code_block_stack_elem elem;
-			while (undefined_code_block_stack.top().block_type != FINAL) {
+			while (undefined_code_block_stack.top().block_type != IF_FINAL) {
 				elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
 				temp.push(elem);
 			}
-			fprintf(output, "br label %%%d\n", undefined_code_block_stack.top().register_num);
+//			fprintf(output, "br label %%%d\n", undefined_code_block_stack.top().register_num);
+			print_code_block(undefined_code_block_stack.top());
 			while (!temp.empty()) {
 				elem = temp.top();
 				temp.pop();
@@ -383,10 +390,10 @@ void Stmt(FILE *file) {
 			is_from_if_else = false;
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
-			if (elem.block_type != FINAL) {
-				// 找到最近的一个 FINAL 代码段
+			if (elem.block_type != IF_FINAL) {
+				// 找到最近的一个 IF_FINAL 代码段
 				stack<undefined_code_block_stack_elem> temp;
-				while (undefined_code_block_stack.top().block_type != FINAL) {
+				while (undefined_code_block_stack.top().block_type != IF_FINAL) {
 					undefined_code_block_stack_elem e = undefined_code_block_stack.top();
 					undefined_code_block_stack.pop();
 					temp.push(e);
@@ -398,7 +405,8 @@ void Stmt(FILE *file) {
 					undefined_code_block_stack.push(e);
 				}
 			} else final_label = elem.register_num;
-			fprintf(output, "\n\n\n%d:\t; 定义代码块 %d\n", elem.register_num, elem.register_num);
+//			fprintf(output, "\n\n\n%d:\t; 定义代码块 %d\n", elem.register_num, elem.register_num);
+			print_code_block(elem);
 			print_variable_table();
 			is_from_if_else = false;
 		}
@@ -410,9 +418,10 @@ void Stmt(FILE *file) {
 		if (word.type != SYMBOL || word.token != "RBrace")
 			exit_();
 
-		// 如果仍然有未定义的代码段，跳转到最近的 FINAL 代码段
+		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
 		if (is_from_if_else && !undefined_code_block_stack.empty()) {
-			fprintf(output, "br label %%%d\n", final_label);
+//			fprintf(output, "br label %%%d\n", final_label);
+			fprintf(output, "br label FINAL_%d\n", final_label);
 			is_from_if_else = false;
 		}
 	}
@@ -445,33 +454,28 @@ void Cond(FILE *file, bool is_else_if = false) {
 
 	// 来自 else if 语句
 	if (is_else_if) {
-		fprintf(output, "br i1 %%%d, label %%%d, label %%%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1, register_num,
-				register_num + 1);
+		fprintf(output, "br i1 %%%d, label IF_TRUE_%d, label IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
+				code_block_num, code_block_num);
 		// 在来自 else if 的语句中，只需要向其中添加两个新的代码块
-		register_num = register_num + 2;
 		undefined_code_block_stack_elem elem;
-		elem.register_num = register_num - 1;
+		elem.register_num = code_block_num++;
 		elem.block_type = IF_FALSE;
 		undefined_code_block_stack.push(elem);
-		elem.register_num = register_num - 2;
 		elem.block_type = IF_TRUE;
 		undefined_code_block_stack.push(elem);
 	}
 
 		//来自普通 if 语句
 	else {
-		fprintf(output, "br i1 %%%d, label %%%d, label %%%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1, register_num,
-				register_num + 1);
+		fprintf(output, "br i1 %%%d, label IF_TRUE_%d, label IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
+				code_block_num, code_block_num);
 		// 保留下了接下来的三个代码块，分别用于 条件为真、条件为假、条件语句结束 的对应代码块，然后倒序入栈。
-		register_num = register_num + 3;
 		undefined_code_block_stack_elem elem;
-		elem.register_num = register_num - 1;
-		elem.block_type = FINAL;
+		elem.register_num = code_block_num++;
+		elem.block_type = IF_FINAL;
 		undefined_code_block_stack.push(elem);
-		elem.register_num = register_num - 2;
 		elem.block_type = IF_FALSE;
 		undefined_code_block_stack.push(elem);
-		elem.register_num = register_num - 3;
 		elem.block_type = IF_TRUE;
 		undefined_code_block_stack.push(elem);
 	}
@@ -543,4 +547,14 @@ void print_variable_table() {
 		stream << register_num++;
 		i.saved_register = "%" + stream.str();
 	}
+}
+
+void print_code_block(undefined_code_block_stack_elem elem) {
+	fprintf(output, "\n\n\n");
+	if (elem.block_type == IF_TRUE)
+		fprintf(output, "IF_TRUE_");
+	else if (elem.block_type == IF_FALSE)
+		fprintf(output, "IF_FALSE_");
+	else fprintf(output, "IF_FINAL_");
+	fprintf(output, "%d:\n", elem.register_num);
 }
