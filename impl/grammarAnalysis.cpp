@@ -274,7 +274,7 @@ void Stmt(FILE *file) {
 //				fprintf(output, "\n\n\n%d:\t; 定义缺省的 else 代码块\n", elem.register_num);
 				print_code_block(elem);
 
-				fprintf(output, "br label %%FINAL_%d\n", final_elem.register_num);
+				fprintf(output, "br label %%IF_FINAL_%d\n", final_elem.register_num);
 			}
 
 			if (!undefined_code_block_stack.empty()) {
@@ -373,7 +373,7 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack.pop();
 				temp.push(elem);
 			}
-			fprintf(output, "br label %%FINAL_%%%d\n", undefined_code_block_stack.top().register_num);
+			fprintf(output, "br label %%IF_FINAL_%%%d\n", undefined_code_block_stack.top().register_num);
 			while (!temp.empty()) {
 				elem = temp.top();
 				temp.pop();
@@ -420,7 +420,7 @@ void Stmt(FILE *file) {
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
 		if (is_from_if_else && !undefined_code_block_stack.empty()) {
 //			fprintf(output, "br label %%%d\n", final_label);
-			fprintf(output, "br label %%FINAL_%d\n", final_label);
+			fprintf(output, "br label %%IF_FINAL_%d\n", final_label);
 			is_from_if_else = false;
 		}
 	}
