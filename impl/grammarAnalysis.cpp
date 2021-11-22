@@ -378,7 +378,7 @@ void Stmt(FILE *file) {
 		return;
 	} else if (word.type == SYMBOL && word.token == "LBrace") {
 		int final_label;
-		bool is_from_if_else_temp =  is_from_if_else;
+		bool is_from_if_else_temp = is_from_if_else;
 		if (is_from_if_else) {
 			is_from_if_else = false;
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
@@ -437,11 +437,11 @@ void CompUnit(FILE *in, FILE *out) {
 
 void Cond(FILE *file, bool is_else_if = false) {
 	number_stack_elem res = calcAntiPoland(file);
-	fprintf(output, "%%%d = zext i32 ", register_num++);
+	fprintf(output, "%%%d = icmp eq i32 ", register_num++);
 	if (res.is_variable)
-		fprintf(output, "%s ", res.variable.c_str());
-	else fprintf(output, "%d ", res.token.num);
-	fprintf(output, "to i1\t; 将 i32 的值转化为 i1 形式，然后进行判断\n");
+		fprintf(output, "%s", res.variable.c_str());
+	else fprintf(output, "%d", res.token.num);
+	fprintf(output, ", 0\t; 将 i32 的值转化为 i1 形式，然后进行判断\n");
 
 	// 来自 else if 语句
 	if (is_else_if) {

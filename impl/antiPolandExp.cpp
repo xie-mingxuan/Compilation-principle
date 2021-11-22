@@ -27,7 +27,7 @@ int priority(const return_token &c) {
 }
 
 void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &operator_stack) {
-	bool is_logic_calc = false;
+	bool is_icmp_calc = false;
 	number_stack_elem x1, x2;
 	if (!number_stack.empty()) {
 		x2 = number_stack.top();
@@ -41,29 +41,6 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 	return_token op = operator_stack.top();
 	operator_stack.pop();
 
-	// 逻辑与运算 或 逻辑或运算 需要率先处理操作数
-	if (op.token == "LogicAnd" || op.token == "LogicOr") {
-		fprintf(output, "%%%d = zext i32 ", register_num);
-		print_number_stack_elem(x1);
-		fprintf(output, "to i1\t; 将 ");
-		print_number_stack_elem(x1);
-		fprintf(output, "的值转化为 i1 形式\n");
-		stringstream s1;
-		s1 << register_num++;
-		x1.is_variable = true;
-		x1.variable = "%" + s1.str();
-
-		fprintf(output, "%%%d = zext i32 ", register_num++);
-		print_number_stack_elem(x2);
-		fprintf(output, "to i1\t; 将 ");
-		print_number_stack_elem(x2);
-		fprintf(output, "的值转化为 i1 形式\n");
-		stringstream s2;
-		s2 << register_num++;
-		x2.is_variable = true;
-		x2.variable = "%" + s2.str();
-	}
-
 	fprintf(output, "%%%d = ", register_num);
 	if (op.token == "Plus")
 		fprintf(output, "add i32 ");
@@ -75,25 +52,25 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		fprintf(output, "sdiv i32 ");
 	else if (op.token == "Mod")
 		fprintf(output, "sdiv i32 ");
+	else if (op.token == "LogicAnd")
+		fprintf(output, "and i32 ");
+	else if (op.token == "LogicOr")
+		fprintf(output, "or i32 ");
 	else {
 		if (op.token == "Eq")
 			fprintf(output, "icmp eq i32 ");
 		else if (op.token == "NotEq")
 			fprintf(output, "icmp ne i32 ");
 		else if (op.token == "Le")
-			fprintf(output, "icmp le i32 ");
+			fprintf(output, "icmp sle i32 ");
 		else if (op.token == "Lt")
-			fprintf(output, "icmp lt i32 ");
+			fprintf(output, "icmp slt i32 ");
 		else if (op.token == "Ge")
-			fprintf(output, "icmp ge i32 ");
+			fprintf(output, "icmp sge i32 ");
 		else if (op.token == "Gt")
-			fprintf(output, "icmp gt i32 ");
-		else if (op.token == "LogicAnd")
-			fprintf(output, "and i1 ");
-		else if (op.token == "LogicOr")
-			fprintf(output, "or i1 ");
+			fprintf(output, "icmp sgt i32 ");
 		else exit(-1);
-		is_logic_calc = true;
+		is_icmp_calc = true;
 	}
 
 	print_number_stack_elem(x1);
@@ -118,11 +95,11 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		register_num = register_num + 2;
 	}
 
-	if (is_logic_calc) {
+	if (is_icmp_calc) {
 		stringstream s3;
 		s3 << register_num++;
 		string i1_register = "%" + s3.str();
-		fprintf(output, "%%%d = zext i1 %s to i32\t; 逻辑运算后还需要将结果转化为 i32 格式，储存在寄存器 %%%d 中\n", register_num,
+		fprintf(output, "%%%d = zext i1 %s to i32\t; 比较运算后还需要将结果转化为 i32 格式，储存在寄存器 %%%d 中\n", register_num,
 				i1_register.c_str(), register_num);
 	}
 
@@ -333,7 +310,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 
 void print_number_stack_elem(const number_stack_elem &x) {
 	if (!x.is_variable)
-		fprintf(output, "%d ", x.token.num);
+		fprintf(output, "%d", x.token.num);
 	else
-		fprintf(output, "%s ", x.variable.c_str());
+		fprintf(output, "%s", x.variable.c_str());
 }
