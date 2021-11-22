@@ -32,7 +32,7 @@ int transNum(int base) {
 	return strtol(tokenStr.c_str(), &err, base);
 }
 
-return_token getSymbol(FILE *file) {
+return_token get_symbol(FILE *file) {
 	//fseek(file, 0, SEEK_SET);
 	clearToken();
 	return_token returnToken;
@@ -193,7 +193,15 @@ return_token getSymbol(FILE *file) {
 //                 judgeLetter::isVert(c)) {
 //            printf("%c\n", c);
 //        }
-		else if (judgeLetter::isComma(c))
+		else if (judgeLetter::isNot(c)) {
+			c = fgetc(file);
+			if (judgeLetter::isEqual(c))
+				returnToken.token = "NotEq";
+			else {
+				fseek(file, -1, SEEK_CUR);
+				returnToken.token = "Not";
+			}
+		} else if (judgeLetter::isComma(c))
 			returnToken.token = "Comma";
 		else if (judgeLetter::isSemi(c))
 			//printf("Semicolon\n");
@@ -222,12 +230,39 @@ return_token getSymbol(FILE *file) {
 		else if (judgeLetter::isMod(c))
 			//printf("Mod\n");
 			returnToken.token = "Mod";
-		else if (judgeLetter::isLt(c))
-			//printf("Lt\n");
-			returnToken.token = "Lt";
-		else if (judgeLetter::isGt(c))
-			//printf("Gt\n");
-			returnToken.token = "Gt";
+		else if (judgeLetter::isLt(c)) {
+			c = fgetc(file);
+			if (judgeLetter::isEqual(c))
+				returnToken.token = "Le";
+			else {
+				fseek(file, -1, SEEK_CUR);
+				returnToken.token = "Lt";
+			}
+		} else if (judgeLetter::isGt(c)) {
+			c = fgetc(file);
+			if (judgeLetter::isEqual(c))
+				returnToken.token = "Ge";
+			else {
+				fseek(file, -1, SEEK_CUR);
+				returnToken.token = "Gt";
+			}
+		} else if (judgeLetter::isAnd(c)) {
+			c = fgetc(file);
+			if (judgeLetter::isAnd(c))
+				returnToken.token = "LogicAnd";
+			else {
+				fseek(file, -1, SEEK_CUR);
+				returnToken.token = "BitAnd";
+			}
+		} else if (judgeLetter::isOr(c)) {
+			c = fgetc(file);
+			if (judgeLetter::isOr(c))
+				returnToken.token = "LogicOr";
+			else {
+				fseek(file, -1, SEEK_CUR);
+				returnToken.token = "BitOr";
+			}
+		}
 
 //            // 如果是 " 则找到下一个引号然后输出
 //        else if (judgeLetter::isQuot(c) || judgeLetter::isQuot2(c)) {
@@ -312,4 +347,15 @@ return_token getSymbol(FILE *file) {
 		printf("%c", c);
 	}
 	return returnToken;
+}
+
+bool is_cond_symbol(const return_token & returnToken) {
+	if (returnToken.type != "Symbol")
+		return false;
+
+	string x = returnToken.token;
+	if (x == "Eq" || x == "NotEq" || x == "Le" || x == "Lt" || x == "Ge" || x == "Gt" || x == "LogicAnd" ||
+		x == "LogicOr")
+		return true;
+	return false;
 }

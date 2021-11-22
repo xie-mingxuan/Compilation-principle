@@ -8,17 +8,26 @@
 extern return_token word;
 extern FILE *input;
 extern FILE *output;
-int exp_num = 1;
+int register_num = 1;
+
+void print_number_stack_elem(const number_stack_elem &);
 
 int priority(const return_token &c) {
 	if (c.token == "Plus" || c.token == "Minus")
-		return 1;
+		return 3;
 	if (c.token == "Mult" || c.token == "Div" || c.token == "Mod")
+		return 4;
+	if (c.token == "Gt" || c.token == "Ge" || c.token == "Lt" || c.token == "Le")
 		return 2;
+	if (c.token == "Eq" || c.token == "NotEq")
+		return 1;
+	if (c.token == "Not")
+		return 5;
 	return -1;
 }
 
 void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &operator_stack) {
+	bool is_logic_calc = false;
 	number_stack_elem x1, x2;
 	if (!number_stack.empty()) {
 		x2 = number_stack.top();
@@ -31,7 +40,31 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 
 	return_token op = operator_stack.top();
 	operator_stack.pop();
-	fprintf(output, "%%%d = ", exp_num);
+
+	// 逻辑与运算 或 逻辑或运算 需要率先处理操作数
+	if (op.token == "LogicAnd" || op.token == "LogicOr") {
+		fprintf(output, "%%%d = zext i32 ", register_num);
+		print_number_stack_elem(x1);
+		fprintf(output, "to i1\t; 将 ");
+		print_number_stack_elem(x1);
+		fprintf(output, "的值转化为 i1 形式\n");
+		stringstream s1;
+		s1 << register_num++;
+		x1.is_variable = true;
+		x1.variable = "%" + s1.str();
+
+		fprintf(output, "%%%d = zext i32 ", register_num++);
+		print_number_stack_elem(x2);
+		fprintf(output, "to i1\t; 将 ");
+		print_number_stack_elem(x2);
+		fprintf(output, "的值转化为 i1 形式\n");
+		stringstream s2;
+		s2 << register_num++;
+		x2.is_variable = true;
+		x2.variable = "%" + s2.str();
+	}
+
+	fprintf(output, "%%%d = ", register_num);
 	if (op.token == "Plus")
 		fprintf(output, "add i32 ");
 	else if (op.token == "Minus")
@@ -42,38 +75,60 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		fprintf(output, "sdiv i32 ");
 	else if (op.token == "Mod")
 		fprintf(output, "sdiv i32 ");
-	else exit(-1);
+	else {
+		if (op.token == "Eq")
+			fprintf(output, "icmp eq i32 ");
+		else if (op.token == "NotEq")
+			fprintf(output, "icmp ne i32 ");
+		else if (op.token == "Le")
+			fprintf(output, "icmp le i32 ");
+		else if (op.token == "Lt")
+			fprintf(output, "icmp lt i32 ");
+		else if (op.token == "Ge")
+			fprintf(output, "icmp ge i32 ");
+		else if (op.token == "Gt")
+			fprintf(output, "icmp gt i32 ");
+		else if (op.token == "LogicAnd")
+			fprintf(output, "and i1 ");
+		else if (op.token == "LogicOr")
+			fprintf(output, "or i1 ");
+		else exit(-1);
+		is_logic_calc = true;
+	}
 
-	if (!x1.is_variable)
-		fprintf(output, "%d, ", x1.token.num);
-	else
-		fprintf(output, "%s, ", x1.variable.c_str());
-
-	if (!x2.is_variable)
-		fprintf(output, "%d\n", x2.token.num);
-	else
-		fprintf(output, "%s\n", x2.variable.c_str());
+	print_number_stack_elem(x1);
+	print_number_stack_elem(x2);
+	fprintf(output, "\n");
 
 	if (op.token == "Mod") {
-		fprintf(output, "%%%d = mul i32 ", exp_num + 1);
+		fprintf(output, "%%%d = mul i32 ", register_num + 1);
 		if (!x2.is_variable)
 			fprintf(output, "%d, ", x2.token.num);
 		else
 			fprintf(output, "%s, ", x2.variable.c_str());
-		fprintf(output, "%%%d\n", exp_num);
+		fprintf(output, "%%%d\n", register_num);
 
-		fprintf(output, "%%%d = sub i32 ", exp_num + 2);
+		fprintf(output, "%%%d = sub i32 ", register_num + 2);
 		if (!x1.is_variable)
 			fprintf(output, "%d, ", x1.token.num);
 		else
 			fprintf(output, "%s, ", x1.variable.c_str());
-		fprintf(output, "%%%d\n", exp_num + 1);
-		exp_num = exp_num + 2;
+		fprintf(output, "%%%d\n", register_num + 1);
+		register_num = register_num + 2;
 	}
+
+	if (is_logic_calc) {
+		stringstream s3;
+		s3 << register_num++;
+		string i1_register = "%" + s3.str();
+		fprintf(output, "%%%d = zext i1 %s to i32\t; 逻辑运算后还需要将结果转化为 i32 格式，储存在寄存器 %%%d 中\n", register_num,
+				i1_register.c_str(), register_num);
+	}
+
 	number_stack_elem res;
 	res.is_variable = true;
 	stringstream stream;
-	stream << exp_num++;
+	stream << register_num++;
 	res.variable = "%" + stream.str();
 	number_stack.push(res);
 }
@@ -100,6 +155,32 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 				break;
 			}
 
+			// 如果操作符是逻辑运算符号，则计算符号之前的表达式，然后将逻辑运算符入栈，且设置下一个 token 不能是符号
+			if (is_cond_symbol(word)) {
+				while (!operator_stack.empty() && priority(operator_stack.top()) >= priority(word))
+					pop_and_print(number_stack, operator_stack);
+				operator_stack.push(word);
+				next_word_can_operator = true;
+				last_word_is_operator = true;
+				word = get_symbol(file);
+				continue;
+			}
+
+			// "非" 运算符判断表达式和 0 的关系，如果等于 0 返回 1，否则返回 0
+			if (word.token == "Not") {
+				word = get_symbol(file);
+				number_stack_elem exp = calcAntiPoland(file);
+				fprintf(output, "%%%d = icmp eq i32 %s, 0\n", register_num++, exp.variable.c_str());
+				fprintf(output, "%%%d = zext i1 %%%d to i32\n", register_num, register_num - 1);
+
+				number_stack_elem res;
+				res.is_variable = true;
+				stringstream stream;
+				stream << register_num++;
+				res.variable = "%" + stream.str();
+				number_stack.push(res);
+			}
+
 			// 左括号则直接入栈
 			if (word.token == "LPar") {
 				operator_stack.push(word);
@@ -111,10 +192,12 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 					exit(-1);
 				while (!operator_stack.empty() && operator_stack.top().token != "LPar")
 					pop_and_print(number_stack, operator_stack);
-				if (operator_stack.empty() || operator_stack.top().token != "LPar")
+				if (operator_stack.empty())
+					break;
+				if (operator_stack.top().token != "LPar")
 					exit(-1);
 				operator_stack.pop();
-				word = getSymbol(file);
+				word = get_symbol(file);
 				last_word_is_operator = false;
 				continue;
 			} else {
@@ -143,8 +226,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 		} else if (word.type == IDENT) {
 			// 判断是否为函数调用或变量调用，如果不是就报错了
 			if (list_contains(word)) {
-				if(is_const_define)
-					if(!is_variable_const(word)) {
+				if (is_const_define)
+					if (!is_variable_const(word)) {
 						printf("\n'%s' is not a const variable value!\n", word.token.c_str());
 						exit(-1);
 					}
@@ -157,45 +240,45 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 			}
 				// 可能调用了 getint() 函数
 			else if (word.token == "getint") {
-				fprintf(output, "%%%d = call i32 @getint()\n", exp_num);
+				fprintf(output, "%%%d = call i32 @getint()\n", register_num);
 				number_stack_elem x;
 				x.is_variable = true;
 				stringstream stream;
-				stream << exp_num++;
+				stream << register_num++;
 				x.variable = "%" + stream.str();
 				number_stack.push(x);
 
-				word = getSymbol(file);
+				word = get_symbol(file);
 
 				if (word.type != SYMBOL || word.token != "LPar")
 					exit(-1);
-				word = getSymbol(file);
+				word = get_symbol(file);
 
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
 			}
 				// 可能调用了 getch() 函数
 			else if (word.token == "getch") {
-				fprintf(output, "%%%d = call i32 @getch()\n", exp_num);
+				fprintf(output, "%%%d = call i32 @getch()\n", register_num);
 				number_stack_elem x;
 				x.is_variable = true;
 				stringstream stream;
-				stream << exp_num++;
+				stream << register_num++;
 				x.variable = "%" + stream.str();
 				number_stack.push(x);
 
-				word = getSymbol(file);
+				word = get_symbol(file);
 
 				if (word.type != SYMBOL || word.token != "LPar")
 					exit(-1);
-				word = getSymbol(file);
+				word = get_symbol(file);
 
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
 			}
 				// 可能调用了 putint() 函数
 			else if (word.token == "putint") {
-				word = getSymbol(file);
+				word = get_symbol(file);
 				if (word.type != SYMBOL || word.token != "LPar")
 					exit(-1);
 
@@ -209,11 +292,11 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
 
-				word = getSymbol(file);
+				word = get_symbol(file);
 			}
 				// 也可能调用了 putch() 函数
 			else if (word.token == "putch") {
-				word = getSymbol(file);
+				word = get_symbol(file);
 				if (word.type != SYMBOL || word.token != "LPar")
 					exit(-1);
 
@@ -227,15 +310,15 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
 
-				word = getSymbol(file);
+				word = get_symbol(file);
 			} else {
 				printf("%s has never been defined!\n", word.token.c_str());
 				exit(-1);
 			}
 		}
-		word = getSymbol(file);
+		word = get_symbol(file);
 	}
-	//word = getSymbol(file);
+	//word = get_symbol(file);
 
 	return number_stack.top();
 //	if (number_stack.top().is_variable) return number_stack.top().variable;
@@ -245,4 +328,11 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 //	stringstream stream;
 //	stream << number_stack.top().token.num;
 //	return stream.str();
+}
+
+void print_number_stack_elem(const number_stack_elem &x) {
+	if (!x.is_variable)
+		fprintf(output, "%d ", x.token.num);
+	else
+		fprintf(output, "%s ", x.variable.c_str());
 }
