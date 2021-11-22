@@ -8,15 +8,15 @@ int main(int argc, char **argv) {
 	}
 	FILE *in = fopen(argv[1], "r");
 	FILE *out = fopen(argv[2], "w+");
-	fseek(in, SEEK_SET, 0);
-	fseek(out, SEEK_SET, 0);
-	CompUnit(in, out);
-	fclose(in);
-	fclose(out);
-//	out = fopen(argv[2], "r");
-//	char c;
-//	while ((c = fgetc(out)) != EOF) {
-//		putchar(c);
-//	}
+
+	char c;
+	while ((c = fgetc(in)) != EOF)
+		putchar(c);
+
+//	fseek(in, SEEK_SET, 0);
+//	fseek(out, SEEK_SET, 0);
+//	CompUnit(in, out);
+//	fclose(in);
+//	fclose(out);
 	return 0;
 }
