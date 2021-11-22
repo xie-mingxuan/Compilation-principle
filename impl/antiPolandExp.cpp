@@ -97,6 +97,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 	}
 
 	print_number_stack_elem(x1);
+	fprintf(output, ", ");
 	print_number_stack_elem(x2);
 	fprintf(output, "\n");
 
