@@ -273,8 +273,8 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack_elem final_elem = undefined_code_block_stack.top();
 //				fprintf(output, "\n\n\n%d:\t; 定义缺省的 else 代码块\n", elem.register_num);
 				print_code_block(elem);
-//				fprintf(output, "br label %%%d\n", final_elem.register_num);
-				print_code_block(final_elem);
+
+				fprintf(output, "br label %%FINAL_%d\n", final_elem.register_num);
 			}
 
 			if (!undefined_code_block_stack.empty()) {
@@ -373,8 +373,7 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack.pop();
 				temp.push(elem);
 			}
-//			fprintf(output, "br label %%%d\n", undefined_code_block_stack.top().register_num);
-			print_code_block(undefined_code_block_stack.top());
+			fprintf(output, "br label %%FINAL_%%%d\n", undefined_code_block_stack.top().register_num);
 			while (!temp.empty()) {
 				elem = temp.top();
 				temp.pop();
@@ -421,7 +420,7 @@ void Stmt(FILE *file) {
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
 		if (is_from_if_else && !undefined_code_block_stack.empty()) {
 //			fprintf(output, "br label %%%d\n", final_label);
-			fprintf(output, "br label FINAL_%d\n", final_label);
+			fprintf(output, "br label %%FINAL_%d\n", final_label);
 			is_from_if_else = false;
 		}
 	}
@@ -454,7 +453,7 @@ void Cond(FILE *file, bool is_else_if = false) {
 
 	// 来自 else if 语句
 	if (is_else_if) {
-		fprintf(output, "br i1 %%%d, label IF_TRUE_%d, label IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
+		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
 				code_block_num, code_block_num);
 		// 在来自 else if 的语句中，只需要向其中添加两个新的代码块
 		undefined_code_block_stack_elem elem;
@@ -467,7 +466,7 @@ void Cond(FILE *file, bool is_else_if = false) {
 
 		//来自普通 if 语句
 	else {
-		fprintf(output, "br i1 %%%d, label IF_TRUE_%d, label IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
+		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
 				code_block_num, code_block_num);
 		// 保留下了接下来的三个代码块，分别用于 条件为真、条件为假、条件语句结束 的对应代码块，然后倒序入栈。
 		undefined_code_block_stack_elem elem;
