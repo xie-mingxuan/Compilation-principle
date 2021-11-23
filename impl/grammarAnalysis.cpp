@@ -8,11 +8,16 @@
 return_token word;
 FILE *input;
 FILE *output;
-list<variable_list_elem> variable_list; // 这是所有定义的变量
+list<variable_list_elem> variable_list;        // 这是所有定义的变量
 extern int register_num;
-bool is_from_if_else = false;
-int code_block_num = 1;
+bool last_token_is_if_or_else = false;        // 标记上一个 token 是不是 if 或 else
+bool is_else_if = false;                    // 标记是否为 else if 语句
+int code_block_num = 1;                        // 标记当前应该处理第几个代码块
+bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句 stmt 语句则为真
+int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
 stack<undefined_code_block_stack_elem> undefined_code_block_stack;
+
+void update_can_deal_multiply_stmt();
 
 void exit_() {
 	fclose(input);
@@ -225,6 +230,11 @@ void Stmt(FILE *file) {
 	if (word.type == IDENT) {
 		// 返回语句
 		if (word.token == "Return") {
+			if (!can_deal_multiply_stmt) {
+				if (can_deal_stmt_left == 0)
+					return;
+				can_deal_stmt_left--;
+			}
 			word = get_symbol(file);
 			number_stack_elem res = calcAntiPoland(file);
 			if (res.is_variable)
@@ -238,12 +248,10 @@ void Stmt(FILE *file) {
 		}
 			// 判断语句
 		else if (word.token == "If") {
-
-			// 如果是 else if 语句，则需要率先写出 else 代码块的定义
-			if (is_from_if_else) {
+			// 如果是 判断语句下的 判断语句，则需要率先写出上层代码块的定义
+			if (last_token_is_if_or_else) {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
-//				fprintf(output, "\n\n\n%d:\t; 定义 else if 语句\n", elem.register_num);
 				print_code_block(elem);
 				print_variable_table();
 			}
@@ -254,19 +262,33 @@ void Stmt(FILE *file) {
 				exit_();
 			word = get_symbol(file);
 
-			Cond(file, is_from_if_else);
+			Cond(file, is_else_if);
+			is_else_if = false;
 
 			if (word.type != SYMBOL || word.token != "RPar")
 				exit_();
 			word = get_symbol(file);
 
-			is_from_if_else = true;
+			bool can_deal_multiply_stmt_temp = can_deal_multiply_stmt;
+			int can_deal_stmt_left_temp = can_deal_stmt_left;
+			update_can_deal_multiply_stmt();
+			last_token_is_if_or_else = true;
 			Stmt(file);
+			can_deal_stmt_left = can_deal_stmt_left_temp;
+			can_deal_multiply_stmt = can_deal_multiply_stmt_temp;
 
 			if (word.type == IDENT && word.token == "Else") {
-				is_from_if_else = true;
+				last_token_is_if_or_else = true;
 				word = get_symbol(file);
+				if (word.type == IDENT && word.token == "If")
+					is_else_if = true;
+				can_deal_multiply_stmt_temp = can_deal_multiply_stmt;
+				can_deal_stmt_left_temp = can_deal_stmt_left;
+				update_can_deal_multiply_stmt();
 				Stmt(file);
+				can_deal_stmt_left = can_deal_stmt_left_temp;
+				can_deal_multiply_stmt = can_deal_multiply_stmt_temp;
+				if()
 			} else {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
@@ -284,9 +306,38 @@ void Stmt(FILE *file) {
 				print_code_block(elem);
 				print_variable_table();
 			}
-			Stmt(file);
+
+			if (!can_deal_multiply_stmt) {
+				if (can_deal_stmt_left != 0) {
+					can_deal_stmt_left--;
+					Stmt(file);
+				}
+			} else
+				Stmt(file);
+
+			// TODO
+//			if (!undefined_code_block_stack.empty()) {
+//				undefined_code_block_stack_elem elem;
+//				stack<undefined_code_block_stack_elem> temp;
+//				while (elem.block_type != IF_FINAL) {
+//					elem = undefined_code_block_stack.top();
+//					undefined_code_block_stack.pop();
+//					temp.push(elem);
+//				}
+//				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+//				while (!temp.empty()) {
+//					elem = temp.top();
+//					temp.pop();
+//					undefined_code_block_stack.push(elem);
+//				}
+//			}
 			return;
 		} else if (word.token == "putch") {
+			if (!can_deal_multiply_stmt) {
+				if (can_deal_stmt_left == 0)
+					return;
+				can_deal_stmt_left--;
+			}
 			word = get_symbol(file);
 			if (word.type != SYMBOL || word.token != "LPar")
 				exit(-1);
@@ -303,6 +354,11 @@ void Stmt(FILE *file) {
 			word = get_symbol(file);
 			return;
 		} else if (word.token == "putint") {
+			if (!can_deal_multiply_stmt) {
+				if (can_deal_stmt_left == 0)
+					return;
+				can_deal_stmt_left--;
+			}
 			word = get_symbol(file);
 			if (word.type != SYMBOL || word.token != "LPar")
 				exit(-1);
@@ -341,8 +397,14 @@ void Stmt(FILE *file) {
 			exit_();
 		}
 
+		if (!can_deal_multiply_stmt) {
+			if (can_deal_stmt_left == 0)
+				return;
+			can_deal_stmt_left--;
+		}
+
 		// 如果赋值语句正处在一个 if_else 代码块的下面，则将其作为该代码块的成分
-		if (is_from_if_else) {
+		if (last_token_is_if_or_else) {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 //			fprintf(output, "\n\n\n%%%d:\t; 定义省略了大括号的赋值语句\n", elem.register_num);
@@ -365,7 +427,7 @@ void Stmt(FILE *file) {
 			exit_();
 
 		// 同样，要将其后面添加上跳转代码块
-		if (is_from_if_else) {
+		if (last_token_is_if_or_else) {
 			stack<undefined_code_block_stack_elem> temp;
 			undefined_code_block_stack_elem elem;
 			while (undefined_code_block_stack.top().block_type != IF_FINAL) {
@@ -384,9 +446,9 @@ void Stmt(FILE *file) {
 		return;
 	} else if (word.type == SYMBOL && word.token == "LBrace") {
 		int final_label;
-		bool is_from_if_else_temp = is_from_if_else;
-		if (is_from_if_else) {
-			is_from_if_else = false;
+		bool last_token_is_if_or_else_temp = last_token_is_if_or_else;
+		if (last_token_is_if_or_else) {
+			last_token_is_if_or_else = false;
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 			if (elem.block_type != IF_FINAL) {
@@ -407,27 +469,28 @@ void Stmt(FILE *file) {
 //			fprintf(output, "\n\n\n%d:\t; 定义代码块 %d\n", elem.register_num, elem.register_num);
 			print_code_block(elem);
 			print_variable_table();
-			is_from_if_else = false;
+			last_token_is_if_or_else = false;
 		}
 
 		word = get_symbol(file);
-		BlockItem(file);
+		while (word.type != SYMBOL || word.token != "RBrace")
+			BlockItem(file);
 
-		is_from_if_else = is_from_if_else_temp;
-		if (word.type != SYMBOL || word.token != "RBrace")
-			exit_();
+		last_token_is_if_or_else = last_token_is_if_or_else_temp;
 
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
-		if (is_from_if_else && !undefined_code_block_stack.empty()) {
+		if (last_token_is_if_or_else && !undefined_code_block_stack.empty()) {
 //			fprintf(output, "br label %%%d\n", final_label);
 			fprintf(output, "br label %%IF_FINAL_%d\n", final_label);
-			is_from_if_else = false;
+			last_token_is_if_or_else = false;
 		}
 	}
 		// 跳过无意义语句
 	else {
 		while (word.type != SYMBOL || word.token != "Semicolon")
-			word = get_symbol(file);
+			if (word.type == SYMBOL && word.token == "RBrace")
+				return;
+		word = get_symbol(file);
 	}
 	word = get_symbol(file);
 }
@@ -453,7 +516,8 @@ void Cond(FILE *file, bool is_else_if = false) {
 
 	// 来自 else if 语句
 	if (is_else_if) {
-		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
+		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
+				register_num - 1,
 				code_block_num, code_block_num);
 		// 在来自 else if 的语句中，只需要向其中添加两个新的代码块
 		undefined_code_block_stack_elem elem;
@@ -466,7 +530,8 @@ void Cond(FILE *file, bool is_else_if = false) {
 
 		//来自普通 if 语句
 	else {
-		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n", register_num - 1,
+		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
+				register_num - 1,
 				code_block_num, code_block_num);
 		// 保留下了接下来的三个代码块，分别用于 条件为真、条件为假、条件语句结束 的对应代码块，然后倒序入栈。
 		undefined_code_block_stack_elem elem;
@@ -554,6 +619,17 @@ void print_code_block(undefined_code_block_stack_elem elem) {
 		fprintf(output, "IF_TRUE_");
 	else if (elem.block_type == IF_FALSE)
 		fprintf(output, "IF_FALSE_");
-	else fprintf(output, "IF_FINAL_");
+	else
+		fprintf(output, "IF_FINAL_");
 	fprintf(output, "%d:\n", elem.register_num);
+}
+
+void update_can_deal_multiply_stmt() {
+	// 只有在下一个符号就是大括号的时候，才能多条处理 stmt 语句
+	if (word.type == SYMBOL && word.token == "LBrace") {
+		can_deal_multiply_stmt = true;
+	} else {
+		can_deal_multiply_stmt = false;
+		can_deal_stmt_left = 1;
+	}
 }
