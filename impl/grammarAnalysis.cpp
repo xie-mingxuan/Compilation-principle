@@ -507,7 +507,7 @@ void CompUnit(FILE *in, FILE *out) {
 
 void Cond(FILE *file, bool is_else_if = false) {
 	number_stack_elem res = calcAntiPoland(file);
-	fprintf(output, "%%%d = icmp eq i32 ", register_num++);
+	fprintf(output, "%%%d = icmp ne i32 ", register_num++);
 	if (res.is_variable)
 		fprintf(output, "%s", res.variable.c_str());
 	else fprintf(output, "%d", res.token.num);
