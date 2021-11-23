@@ -29,6 +29,27 @@ int priority(const return_token &c) {
 void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &operator_stack) {
 	bool is_icmp_calc = false;
 	number_stack_elem x1, x2;
+	return_token op = operator_stack.top();
+	operator_stack.pop();
+
+	// 非运算是单目运算符，要单独考虑
+	if (op.token == "Not") {
+		x1 = number_stack.top();
+		number_stack.pop();
+
+		fprintf(output, "%%%d = icmp eq i32 ", register_num++);
+		print_number_stack_elem(x1);
+		fprintf(output, ", 0\n%%%d = zext i1 %%%d to i32\n", register_num, register_num - 1);
+
+		number_stack_elem res;
+		res.is_variable = true;
+		stringstream stream;
+		stream << register_num++;
+		res.variable = "%" + stream.str();
+		number_stack.push(res);
+		return;
+	}
+
 	if (!number_stack.empty()) {
 		x2 = number_stack.top();
 		number_stack.pop();
@@ -37,9 +58,6 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		x1 = number_stack.top();
 		number_stack.pop();
 	} else exit(-1);
-
-	return_token op = operator_stack.top();
-	operator_stack.pop();
 
 	fprintf(output, "%%%d = ", register_num);
 	if (op.token == "Plus")
@@ -133,34 +151,22 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 				break;
 			}
 
-			// 如果操作符是逻辑运算符号，则计算符号之前的表达式，然后将逻辑运算符入栈，且设置下一个 token 不能是符号
+			// 如果操作符是逻辑运算符号，则计算符号之前的表达式，然后将逻辑运算符入栈
 			if (is_cond_symbol(word)) {
 				while (!operator_stack.empty() && priority(operator_stack.top()) >= priority(word))
 					pop_and_print(number_stack, operator_stack);
 				operator_stack.push(word);
 				next_word_can_operator = true;
-				last_word_is_operator = true;
-				word = get_symbol(file);
-				continue;
 			}
 
-			// "非" 运算符判断表达式和 0 的关系，如果等于 0 返回 1，否则返回 0
-			if (word.token == "Not") {
-				word = get_symbol(file);
-				number_stack_elem exp = calcAntiPoland(file);
-				fprintf(output, "%%%d = icmp eq i32 %s, 0\n", register_num++, exp.variable.c_str());
-				fprintf(output, "%%%d = zext i1 %%%d to i32\n", register_num, register_num - 1);
-
-				number_stack_elem res;
-				res.is_variable = true;
-				stringstream stream;
-				stream << register_num++;
-				res.variable = "%" + stream.str();
-				number_stack.push(res);
+				// "非" 运算符直接入栈
+			else if (word.token == "Not") {
+				operator_stack.push(word);
+				next_word_can_operator = true;
 			}
 
-			// 左括号则直接入栈
-			if (word.token == "LPar") {
+				// 左括号则直接入栈
+			else if (word.token == "LPar") {
 				operator_stack.push(word);
 				next_word_can_operator = true;
 			}
