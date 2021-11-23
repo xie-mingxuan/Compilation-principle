@@ -288,7 +288,6 @@ void Stmt(FILE *file) {
 				Stmt(file);
 				can_deal_stmt_left = can_deal_stmt_left_temp;
 				can_deal_multiply_stmt = can_deal_multiply_stmt_temp;
-				if()
 			} else {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
