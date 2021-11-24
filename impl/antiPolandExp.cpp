@@ -14,16 +14,20 @@ void print_number_stack_elem(const number_stack_elem &);
 
 int priority(const return_token &c) {
 	if (c.token == "Plus" || c.token == "Minus")
-		return 3;
-	if (c.token == "Mult" || c.token == "Div" || c.token == "Mod")
 		return 4;
+	if (c.token == "Mult" || c.token == "Div" || c.token == "Mod")
+		return 3;
 	if (c.token == "Gt" || c.token == "Ge" || c.token == "Lt" || c.token == "Le")
-		return 2;
+		return 6;
 	if (c.token == "Eq" || c.token == "NotEq")
-		return 1;
+		return 7;
 	if (c.token == "Not")
-		return 5;
-	return -1;
+		return 2;
+	if (c.token == "LogicAnd")
+		return 11;
+	if (c.token == "LogicOr")
+		return 12;
+	return 16;
 }
 
 void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &operator_stack) {
@@ -153,7 +157,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 
 			// 如果操作符是逻辑运算符号，则计算符号之前的表达式，然后将逻辑运算符入栈
 			if (is_cond_symbol(word)) {
-				while (!operator_stack.empty() && priority(operator_stack.top()) >= priority(word))
+				while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
 					pop_and_print(number_stack, operator_stack);
 				operator_stack.push(word);
 				next_word_can_operator = true;
@@ -201,7 +205,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 				}
 					// 如果上一个输入的是操作数，证明下面这个是操作符，不需要添加 0，需要比较算符的优先顺序
 				else {
-					while (!operator_stack.empty() && priority(operator_stack.top()) >= priority(word))
+					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
 						pop_and_print(number_stack, operator_stack);
 				}
 				operator_stack.push(word);
