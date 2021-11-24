@@ -456,8 +456,6 @@ void Stmt(FILE *file) {
 			}
 		}
 		last_token_is_if_or_else = false;
-		word = get_symbol(file);
-		return;
 	} else if (word.type == SYMBOL && word.token == "LBrace") {
 		int final_label;
 		bool last_token_is_if_or_else_temp = last_token_is_if_or_else;
@@ -498,7 +496,6 @@ void Stmt(FILE *file) {
 			if (need_br) {
 				fprintf(output, "br label %%IF_FINAL_%d\n", final_label);
 			}
-			need_br = true;
 			last_token_is_if_or_else = false;
 		}
 	}
@@ -510,6 +507,7 @@ void Stmt(FILE *file) {
 			word = get_symbol(file);
 		}
 	}
+	need_br = true;
 	word = get_symbol(file);
 }
 
