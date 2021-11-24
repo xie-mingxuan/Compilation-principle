@@ -324,21 +324,21 @@ void Stmt(FILE *file) {
 				Stmt(file);
 
 			// TODO
-			if (!undefined_code_block_stack.empty()) {
-				undefined_code_block_stack_elem elem;
-				stack<undefined_code_block_stack_elem> temp;
-				while (elem.block_type != IF_FINAL) {
-					elem = undefined_code_block_stack.top();
-					undefined_code_block_stack.pop();
-					temp.push(elem);
-				}
-				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
-				while (!temp.empty()) {
-					elem = temp.top();
-					temp.pop();
-					undefined_code_block_stack.push(elem);
-				}
-			}
+//			if (!undefined_code_block_stack.empty()) {
+//				undefined_code_block_stack_elem elem;
+//				stack<undefined_code_block_stack_elem> temp;
+//				while (elem.block_type != IF_FINAL) {
+//					elem = undefined_code_block_stack.top();
+//					undefined_code_block_stack.pop();
+//					temp.push(elem);
+//				}
+//				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+//				while (!temp.empty()) {
+//					elem = temp.top();
+//					temp.pop();
+//					undefined_code_block_stack.push(elem);
+//				}
+//			}
 			return;
 		} else if (word.token == "putch") {
 			if (!can_deal_multiply_stmt) {
