@@ -15,6 +15,7 @@ bool is_else_if = false;                    // 标记是否为 else if 语句
 int code_block_num = 1;                        // 标记当前应该处理第几个代码块
 bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句 stmt 语句则为真
 int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
+bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
 stack<undefined_code_block_stack_elem> undefined_code_block_stack;
 
 void update_can_deal_multiply_stmt();
@@ -240,6 +241,7 @@ void Stmt(FILE *file) {
 			if (res.is_variable)
 				fprintf(output, "ret i32 %s\n", res.variable.c_str());
 			else fprintf(output, "ret i32 %d\n", res.token.num);
+			need_br = false;
 
 			if (word.type != SYMBOL || word.token != "Semicolon")
 				exit_();
@@ -302,6 +304,7 @@ void Stmt(FILE *file) {
 				print_variable_table();
 
 				fprintf(output, "br label %%IF_FINAL_%d\n", final_elem.register_num);
+				need_br = false;
 			}
 
 			if (!undefined_code_block_stack.empty()) {
@@ -324,21 +327,22 @@ void Stmt(FILE *file) {
 				Stmt(file);
 
 			// TODO
-//			if (!undefined_code_block_stack.empty()) {
-//				undefined_code_block_stack_elem elem;
-//				stack<undefined_code_block_stack_elem> temp;
-//				while (elem.block_type != IF_FINAL) {
-//					elem = undefined_code_block_stack.top();
-//					undefined_code_block_stack.pop();
-//					temp.push(elem);
-//				}
-//				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
-//				while (!temp.empty()) {
-//					elem = temp.top();
-//					temp.pop();
-//					undefined_code_block_stack.push(elem);
-//				}
-//			}
+			if (!undefined_code_block_stack.empty()) {
+				undefined_code_block_stack_elem elem;
+				stack<undefined_code_block_stack_elem> temp;
+				while (elem.block_type != IF_FINAL) {
+					elem = undefined_code_block_stack.top();
+					undefined_code_block_stack.pop();
+					temp.push(elem);
+				}
+				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+				while (!temp.empty()) {
+					elem = temp.top();
+					temp.pop();
+					undefined_code_block_stack.push(elem);
+				}
+			}
+			need_br = false;
 			return;
 		} else if (word.token == "putch") {
 			if (!can_deal_multiply_stmt) {
@@ -444,6 +448,7 @@ void Stmt(FILE *file) {
 				temp.push(elem);
 			}
 			fprintf(output, "br label %%IF_FINAL_%d\n", undefined_code_block_stack.top().register_num);
+			need_br = false;
 			while (!temp.empty()) {
 				elem = temp.top();
 				temp.pop();
@@ -490,7 +495,10 @@ void Stmt(FILE *file) {
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
 		if (last_token_is_if_or_else && !undefined_code_block_stack.empty()) {
 //			fprintf(output, "br label %%%d\n", final_label);
-			fprintf(output, "br label %%IF_FINAL_%d\n", final_label);
+			if (need_br) {
+				fprintf(output, "br label %%IF_FINAL_%d\n", final_label);
+			}
+			need_br = true;
 			last_token_is_if_or_else = false;
 		}
 	}
