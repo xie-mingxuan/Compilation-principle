@@ -299,6 +299,7 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack_elem final_elem = undefined_code_block_stack.top();
 //				fprintf(output, "\n\n\n%d:\t; 定义缺省的 else 代码块\n", elem.register_num);
 				print_code_block(elem);
+				print_variable_table();
 
 				fprintf(output, "br label %%IF_FINAL_%d\n", final_elem.register_num);
 			}
