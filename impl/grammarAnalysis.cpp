@@ -387,6 +387,7 @@ void Stmt(FILE *file) {
 			elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 			fprintf(output, "\n\n\nWHILE_FINAL_%d:\t; while 循环的结束\n", elem.register_num);
+			print_variable_table();
 			word = get_symbol(input);
 			return;
 		}
