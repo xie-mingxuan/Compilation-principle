@@ -544,27 +544,56 @@ void CompUnit(FILE *in, FILE *out) {
 		if (word.type == IDENT && word.token == "main")
 			break;
 
-		variable_name = word.token;
-		word = get_symbol(input);
-		if (word.type != SYMBOL || word.token != "Assign")
-			exit_();
-		word = get_symbol(input);
-		number_stack_elem res = calcAntiPoland(input, true, true);
-		fprintf(output, "@%s = global i32 %d\t; 定义全局变量 %s = %d\n", variable_name.c_str(), res.token.num,
-				variable_name.c_str(), res.token.num);
-		if (word.type != SYMBOL || word.token != "Semicolon")
-			exit_();
+		// 处理一句话中的多重定义
+		while (word.type != SYMBOL || word.token != "Semicolon") {
+			variable_name = word.token;
+			elem.token.type = IDENT;
+			elem.token.token = variable_name;
+			elem.saved_pointer = "@" + variable_name;
+			elem.code_block_layer = 0;
+			if (is_const_define)
+				elem.is_const = true;
 
-		if (is_const_define)
-			elem.is_const = true;
-		elem.token.type = IDENT;
-		elem.token.token = variable_name;
-		elem.global_variable_value = res.token.num;
-		elem.saved_pointer = "@" + variable_name;
-		elem.code_block_layer = 0;
-		variable_list.push_back(elem);
+			word = get_symbol(input);
 
-		word = get_symbol(input);
+			if (word.type == SYMBOL && (word.token == "Semicolon" || word.token == "Comma")) {
+				fprintf(output, "@%s = global i32 0\t; 定义全局变量 %s = 0\n", variable_name.c_str(),
+						variable_name.c_str());
+				elem.global_variable_value = 0;
+				variable_list.push_back(elem);
+				// 遇到逗号继续
+				if (word.token == "Comma") {
+					word = get_symbol(input);
+					continue;
+				}
+					// 遇到分号则终止本句话
+				else if (word.token == "Semicolon") {
+					word = get_symbol(input);
+					break;
+				}
+			}
+
+			if (word.type != SYMBOL || word.token != "Assign")
+				exit_();
+			word = get_symbol(input);
+			number_stack_elem res = calcAntiPoland(input, true, true);
+			fprintf(output, "@%s = global i32 %d\t; 定义全局变量 %s = %d\n", variable_name.c_str(), res.token.num,
+					variable_name.c_str(), res.token.num);
+			elem.global_variable_value = res.token.num;
+			variable_list.push_back(elem);
+			if (word.type == SYMBOL && (word.token == "Semicolon" || word.token == "Comma")) {
+				// 遇到逗号继续
+				if (word.token == "Comma") {
+					word = get_symbol(input);
+					continue;
+				}
+					// 遇到分号则终止本句话
+				else if (word.token == "Semicolon") {
+					word = get_symbol(input);
+					break;
+				}
+			} else exit_();
+		}
 	}
 	init();
 	FuncDef(input, true);
