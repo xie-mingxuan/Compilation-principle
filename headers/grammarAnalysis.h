@@ -22,8 +22,11 @@ using namespace std;
 typedef struct {
 	return_token token;
 	bool is_const = false;
+	bool is_global = false;
 	string saved_pointer;
 	string saved_register;
+	int code_block_layer;
+	int global_variable_value;
 } variable_list_elem;
 
 typedef struct {
@@ -31,11 +34,24 @@ typedef struct {
 	int block_type;
 } undefined_code_block_stack_elem;
 
+void exit_();
+
 /**
- * 判断是 token 否在符号表中
+ * 判断是 token 否在符号表当前层中定义过
  * @return 在符号表中返回 true
  */
-bool list_contains(const return_token &);
+bool is_variable_list_contains_in_this_layer(const return_token &);
+
+/**
+ * 判断是 token 否在符号表中定义过
+ * @return 在符号表中返回 true
+ */
+bool is_variable_list_contains_in_all_layer(const return_token &);
+
+/**
+ * 更新符号表，将所有当前代码块的局部变量删掉
+ */
+void update_variable_list();
 
 /**
  * 判断是否为常量
@@ -70,6 +86,8 @@ void print_variable_table();
  */
 void print_code_block(undefined_code_block_stack_elem);
 
+variable_list_elem get_variable(const return_token &);
+
 void Decl(FILE *);
 
 void ConstDecl(FILE *);
@@ -88,7 +106,7 @@ void VarDef(FILE *);
 
 number_stack_elem InitVal(FILE *);
 
-void FuncDef(FILE *);
+void FuncDef(FILE *, bool = false);
 
 void FuncType(FILE *);
 

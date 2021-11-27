@@ -8,6 +8,7 @@
 extern return_token word;
 extern FILE *input;
 extern FILE *output;
+extern int code_block_layer;
 int register_num = 1;
 
 void print_number_stack_elem(const number_stack_elem &);
@@ -133,7 +134,64 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 	number_stack.push(res);
 }
 
-number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
+void pop_and_not_print(stack<number_stack_elem> &number_stack, stack<return_token> &operator_stack) {
+	number_stack_elem x1, x2;
+	return_token op = operator_stack.top();
+	operator_stack.pop();
+	number_stack_elem res;
+	res.is_variable = false;
+
+	// 非运算是单目运算符，要单独考虑
+	if (op.token == "Not") {
+		x1 = number_stack.top();
+		number_stack.pop();
+		res.token.num = !x1.token.num;
+		number_stack.push(res);
+		return;
+	}
+
+	if (!number_stack.empty()) {
+		x2 = number_stack.top();
+		number_stack.pop();
+	} else exit(-1);
+	if (!number_stack.empty()) {
+		x1 = number_stack.top();
+		number_stack.pop();
+	} else exit(-1);
+
+	if (op.token == "Plus")
+		res.token.num = x1.token.num + x2.token.num;
+	else if (op.token == "Minus")
+		res.token.num = x1.token.num - x2.token.num;
+	else if (op.token == "Mult")
+		res.token.num = x1.token.num * x2.token.num;
+	else if (op.token == "Div")
+		res.token.num = x1.token.num / x2.token.num;
+	else if (op.token == "Mod")
+		res.token.num = x1.token.num % x2.token.num;
+	else if (op.token == "LogicAnd")
+		res.token.num = x1.token.num && x2.token.num;
+	else if (op.token == "LogicOr")
+		res.token.num = x1.token.num || x2.token.num;
+	else {
+		if (op.token == "Eq")
+			res.token.num = x1.token.num == x2.token.num;
+		else if (op.token == "NotEq")
+			res.token.num = x1.token.num != x2.token.num;
+		else if (op.token == "Le")
+			res.token.num = x1.token.num <= x2.token.num;
+		else if (op.token == "Lt")
+			res.token.num = x1.token.num < x2.token.num;
+		else if (op.token == "Ge")
+			res.token.num = x1.token.num >= x2.token.num;
+		else if (op.token == "Gt")
+			res.token.num = x1.token.num > x2.token.num;
+		else exit(-1);
+	}
+	number_stack.push(res);
+}
+
+number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_global_define) {
 	bool last_word_is_operator = true;
 	bool next_word_can_operator = true;
 	stack<number_stack_elem> number_stack;
@@ -150,15 +208,25 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 		} else if (word.type == "Symbol") {
 			// 如果操作符是分号或逗号，则证明运算结束，按照逆波兰表达式的方式进行运算然后输出
 			if (word.token == "Semicolon" || word.token == "Comma") {
-				while (!operator_stack.empty())
-					pop_and_print(number_stack, operator_stack);
+				if (!is_global_define) {
+					while (!operator_stack.empty())
+						pop_and_print(number_stack, operator_stack);
+				} else {
+					while (!operator_stack.empty())
+						pop_and_not_print(number_stack, operator_stack);
+				}
 				break;
 			}
 
 			// 如果操作符是逻辑运算符号，则计算符号之前的表达式，然后将逻辑运算符入栈
 			if (is_cond_symbol(word)) {
-				while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
-					pop_and_print(number_stack, operator_stack);
+				if (!is_global_define) {
+					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
+						pop_and_print(number_stack, operator_stack);
+				} else {
+					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
+						pop_and_not_print(number_stack, operator_stack);
+				}
 				operator_stack.push(word);
 				next_word_can_operator = true;
 			}
@@ -178,8 +246,13 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 			else if (word.token == "RPar") {
 				if (!next_word_can_operator)
 					exit(-1);
-				while (!operator_stack.empty() && operator_stack.top().token != "LPar")
-					pop_and_print(number_stack, operator_stack);
+				if (!is_global_define) {
+					while (!operator_stack.empty() && operator_stack.top().token != "LPar")
+						pop_and_print(number_stack, operator_stack);
+				} else {
+					while (!operator_stack.empty() && operator_stack.top().token != "LPar")
+						pop_and_not_print(number_stack, operator_stack);
+				}
 				if (operator_stack.empty())
 					break;
 				if (operator_stack.top().token != "LPar")
@@ -205,24 +278,46 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define) {
 				}
 					// 如果上一个输入的是操作数，证明下面这个是操作符，不需要添加 0，需要比较算符的优先顺序
 				else {
-					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
-						pop_and_print(number_stack, operator_stack);
+					if (!is_global_define) {
+						while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
+							pop_and_print(number_stack, operator_stack);
+					} else {
+						while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
+							pop_and_not_print(number_stack, operator_stack);
+					}
 				}
 				operator_stack.push(word);
 			}
 			last_word_is_operator = true;
 		} else if (word.type == IDENT) {
 			// 判断是否为函数调用或变量调用，如果不是就报错了
-			if (list_contains(word)) {
-				if (is_const_define)
+			if (is_variable_list_contains_in_all_layer(word)) {
+				// 全局变量定义
+				if (is_global_define) {
 					if (!is_variable_const(word)) {
 						printf("\n'%s' is not a const variable value!\n", word.token.c_str());
-						exit(-1);
+						exit_();
 					}
-				number_stack_elem x;
-				x.is_variable = true;
-				x.variable = get_register(word);
-				number_stack.push(x);
+					variable_list_elem elem = get_variable(word);
+					if (!elem.is_global)
+						exit_();
+					number_stack_elem x;
+					x.is_variable = false;
+					x.token.num = elem.global_variable_value;
+					number_stack.push(x);
+				}
+					// 局部变量定义
+				else {
+					if (is_const_define)
+						if (!is_variable_const(word)) {
+							printf("\n'%s' is not a const variable value!\n", word.token.c_str());
+							exit(-1);
+						}
+					number_stack_elem x;
+					x.is_variable = true;
+					x.variable = get_register(word);
+					number_stack.push(x);
+				}
 				last_word_is_operator = false;
 				next_word_can_operator = true;
 			}

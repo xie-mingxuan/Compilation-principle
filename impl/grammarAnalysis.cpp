@@ -16,6 +16,7 @@ int code_block_num = 1;                        // 标记当前应该处理第几
 bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句 stmt 语句则为真
 int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
 bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
+int code_block_layer = 0;                    // 标记现在是第几层大括号（局部变量的层数）
 stack<undefined_code_block_stack_elem> undefined_code_block_stack;
 
 void update_can_deal_multiply_stmt();
@@ -26,8 +27,13 @@ void exit_() {
 	exit(-1);
 }
 
-void FuncDef(FILE *file) {
-	FuncType(file);
+void FuncDef(FILE *file, bool is_main_func) {
+	if (!is_main_func) {
+		// 修改为主函数不需要判断函数类型了
+		FuncType(file);
+	} else {
+		fprintf(output, "define i32 ");
+	}
 	Ident(file);
 	if (word.type != SYMBOL || word.token != "LPar")
 		exit_();
@@ -45,33 +51,37 @@ void FuncDef(FILE *file) {
 }
 
 void FuncType(FILE *file) {
-	if (word.type != IDENT || word.token != "int")
-		exit_();
-
+	if (word.type == IDENT || word.token == "int")
+		fprintf(output, "define i32 ");
+	else if (word.type == IDENT || word.token == "void")
+		fprintf(output, "define void ");
+	else exit_();
 	word = get_symbol(file);
-	fprintf(output, "define i32 ");
+
 }
 
 void Ident(FILE *file) {
 	if (word.type != IDENT || word.token != "main")
 		exit_();
 
+	fprintf(output, "@%s", word.token.c_str());
 	word = get_symbol(file);
-	fprintf(output, "@main");
 }
 
 void Block(FILE *file) {
 	if (word.type != SYMBOL || word.token != "LBrace")
 		exit_();
+	code_block_layer++;
 	word = get_symbol(file);
 	fprintf(output, "{\n");
+	print_variable_table();
 
 	while (word.type != SYMBOL || word.token != "RBrace") {
 		BlockItem(file);
 	}
+	update_variable_list();
+	code_block_layer--;
 
-	if (word.type != SYMBOL || word.token != "RBrace")
-		exit_();
 	word = get_symbol(file);
 	fprintf(output, "}\n");
 }
@@ -118,9 +128,10 @@ void ConstDef(FILE *file) {
 		exit_();
 
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
-	if (list_contains(word))
+	if (is_variable_list_contains_in_this_layer(word))
 		exit_();
 	variable_list_elem elem;
+	elem.code_block_layer = code_block_layer;
 	elem.token = word;
 	elem.is_const = true;
 	stringstream stream;
@@ -186,9 +197,10 @@ void VarDef(FILE *file) {
 		exit_();
 
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
-	if (list_contains(word))
+	if (is_variable_list_contains_in_this_layer(word))
 		exit_();
 	variable_list_elem elem;
+	elem.code_block_layer = code_block_layer;
 	elem.token = word;
 	stringstream stream;
 	stream << register_num++;
@@ -211,7 +223,7 @@ void VarDef(FILE *file) {
 		fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
 	else
 		fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
-	fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n\n", register_num, get_pointer(x).c_str(),
+	fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n", register_num, get_pointer(x).c_str(),
 			i.c_str());
 	stringstream stream1;
 	stream1 << register_num++;
@@ -326,7 +338,6 @@ void Stmt(FILE *file) {
 			} else
 				Stmt(file);
 
-			// TODO
 			if (!undefined_code_block_stack.empty()) {
 				undefined_code_block_stack_elem elem;
 				stack<undefined_code_block_stack_elem> temp;
@@ -388,7 +399,7 @@ void Stmt(FILE *file) {
 			return;
 		}
 
-		if (!list_contains(word)) {
+		if (!is_variable_list_contains_in_all_layer(word)) {
 			printf("%s has never been defined!\n", word.token.c_str());
 			exit_();
 		}
@@ -458,6 +469,7 @@ void Stmt(FILE *file) {
 		last_token_is_if_or_else = false;
 	} else if (word.type == SYMBOL && word.token == "LBrace") {
 		int final_label;
+		code_block_layer++;
 		bool last_token_is_if_or_else_temp = last_token_is_if_or_else;
 		if (last_token_is_if_or_else) {
 			last_token_is_if_or_else = false;
@@ -487,7 +499,8 @@ void Stmt(FILE *file) {
 		word = get_symbol(file);
 		while (word.type != SYMBOL || word.token != "RBrace")
 			BlockItem(file);
-
+		update_variable_list();
+		code_block_layer--;
 		last_token_is_if_or_else = last_token_is_if_or_else_temp;
 
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
@@ -515,14 +528,52 @@ void CompUnit(FILE *in, FILE *out) {
 	input = in;
 	output = out;
 	word = get_symbol(in);
+	// 全局变量定义
+	while (true) {
+		bool is_const_define = false;
+		string variable_name;
+		variable_list_elem elem;
+		elem.is_global = true;
+		if (word.type == IDENT && word.token == "const") {
+			word = get_symbol(input);
+			is_const_define = true;
+		}
+		if (word.type != IDENT || word.token != "int")
+			exit_();
+		word = get_symbol(input);
+		if (word.type == IDENT && word.token == "main")
+			break;
+
+		variable_name = word.token;
+		word = get_symbol(input);
+		if (word.type != SYMBOL || word.token != "Assign")
+			exit_();
+		word = get_symbol(input);
+		number_stack_elem res = calcAntiPoland(input, true, true);
+		fprintf(output, "@%s = global i32 %d\t; 定义全局变量 %s = %d\n", variable_name.c_str(), res.token.num,
+				variable_name.c_str(), res.token.num);
+		if (word.type != SYMBOL || word.token != "Semicolon")
+			exit_();
+
+		if (is_const_define)
+			elem.is_const = true;
+		elem.token.type = IDENT;
+		elem.token.token = variable_name;
+		elem.global_variable_value = res.token.num;
+		elem.saved_pointer = "@" + variable_name;
+		elem.code_block_layer = 0;
+		variable_list.push_back(elem);
+
+		word = get_symbol(input);
+	}
 	init();
-	FuncDef(in);
+	FuncDef(input, true);
 	word = get_symbol(in);
 	if (word.type == "Error")
 		exit_();
 }
 
-void Cond(FILE *file, bool is_else_if = false) {
+void Cond(FILE *file, bool is_else_if_cond = false) {
 	number_stack_elem res = calcAntiPoland(file);
 	fprintf(output, "%%%d = icmp ne i32 ", register_num++);
 	if (res.is_variable)
@@ -531,7 +582,7 @@ void Cond(FILE *file, bool is_else_if = false) {
 	fprintf(output, ", 0\t; 将 i32 的值转化为 i1 形式，然后进行判断\n");
 
 	// 来自 else if 语句
-	if (is_else_if) {
+	if (is_else_if_cond) {
 		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
 				register_num - 1,
 				code_block_num, code_block_num);
@@ -568,14 +619,33 @@ void init() {
 					"declare void @putch(i32)\n\n");
 }
 
-bool list_contains(const return_token &token) {
+bool is_variable_list_contains_in_this_layer(const return_token &token) {
 	if (variable_list.empty())
 		return false;
-	for (const auto &saved_token: variable_list) {
-		if (saved_token.token == token)
+	for (const auto &variable: variable_list) {
+		if (variable.code_block_layer == code_block_layer && variable.token == token)
 			return true;
 	}
 	return false;
+}
+
+bool is_variable_list_contains_in_all_layer(const return_token &token) {
+	if (variable_list.empty())
+		return false;
+	for (const auto &variable: variable_list) {
+		if (variable.code_block_layer <= code_block_layer && variable.token == token)
+			return true;
+	}
+	return false;
+}
+
+void update_variable_list() {
+	list<variable_list_elem> new_list;
+	for (const auto &variable: variable_list) {
+		if (variable.code_block_layer != code_block_layer)
+			new_list.push_back(variable);
+	}
+	variable_list = new_list;
 }
 
 bool is_variable_const(const return_token &token) {
@@ -589,22 +659,26 @@ bool is_variable_const(const return_token &token) {
 }
 
 void set_register(const return_token &token, const string &save_register) {
-	for (auto &saved_token: variable_list) {
-		if (saved_token.token == token) {
-			saved_token.saved_register = save_register;
-			return;
+	for (int layer = code_block_layer; layer >= 0; layer--) {
+		for (auto &variable: variable_list) {
+			if (variable.code_block_layer == layer && variable.token == token) {
+				variable.saved_register = save_register;
+				return;
+			}
 		}
 	}
 }
 
 string get_register(const return_token &token) {
-	for (auto &saved_token: variable_list) {
-		if (saved_token.token == token) {
-			if (saved_token.saved_register.empty()) {
-				printf("%s has never been initialized!\n", token.token.c_str());
-				exit(-1);
+	for (int layer = code_block_layer; layer >= 0; layer--) {
+		for (auto &variable: variable_list) {
+			if (variable.code_block_layer == layer && variable.token == token) {
+				if (variable.saved_register.empty()) {
+					printf("%s has never been initialized!\n", token.token.c_str());
+					exit(-1);
+				}
+				return variable.saved_register;
 			}
-			return saved_token.saved_register;
 		}
 	}
 	return "";
@@ -647,5 +721,15 @@ void update_can_deal_multiply_stmt() {
 	} else {
 		can_deal_multiply_stmt = false;
 		can_deal_stmt_left = 1;
+	}
+}
+
+variable_list_elem get_variable(const return_token &token) {
+	int layer = code_block_layer;
+	for (; layer >= 0; layer--) {
+		for (auto &i: variable_list) {
+			if (token == i.token)
+				return i;
+		}
 	}
 }
