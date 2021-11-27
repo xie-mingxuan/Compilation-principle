@@ -281,7 +281,7 @@ void Stmt(FILE *file) {
 				exit_();
 			word = get_symbol(file);
 
-			Cond(file, is_else_if);
+			Cond(file, is_else_if, false);
 			is_else_if = false;
 
 			if (word.type != SYMBOL || word.token != "RPar")
@@ -338,7 +338,7 @@ void Stmt(FILE *file) {
 			} else
 				Stmt(file);
 
-			if (!undefined_code_block_stack.empty()) {
+			if (!undefined_code_block_stack.empty() && undefined_code_block_stack.top().block_type <= IF_FINAL) {
 				undefined_code_block_stack_elem elem;
 				stack<undefined_code_block_stack_elem> temp;
 				while (elem.block_type != IF_FINAL) {
@@ -355,7 +355,73 @@ void Stmt(FILE *file) {
 			}
 			need_br = false;
 			return;
-		} else if (word.token == "putch") {
+		}
+			// 循环语句
+		else if (word.token == "While") {
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "LPar")
+				exit_();
+			fprintf(output, "br label %%WHILE_COND_%d\n", code_block_num);
+			fprintf(output, "\n\n\nWHILE_COND_%d:\t; while 循环的判断条件\n", code_block_num);
+			word = get_symbol(input);
+			Cond(input, false, true);
+			if (word.type != SYMBOL || word.token != "RPar")
+				exit_();
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "LBrace")
+				exit_();
+			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+			undefined_code_block_stack.pop();
+			fprintf(output, "\n\n\nWHILE_LOOP_%d:\t; while 循环的循环体\n", elem.register_num);
+			word = get_symbol(input);
+			while (word.type != SYMBOL || word.token != "RBrace")
+				BlockItem(input);
+			if (need_br)
+				fprintf(output, "br label %%WHILE_COND_%d\n", elem.register_num);
+			else need_br = true;
+
+			elem = undefined_code_block_stack.top();
+			undefined_code_block_stack.pop();
+			fprintf(output, "\n\n\nWHILE_FINAL_%d:\t; while 循环的结束\n", elem.register_num);
+			word = get_symbol(input);
+			return;
+		}
+			// break 语句 或 continue 语句
+		else if (word.token == "Continue" || word.token == "Break") {
+			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+			stack<undefined_code_block_stack_elem> temp;
+			if (last_token_is_if_or_else) {
+				if (elem.block_type == IF_TRUE)
+					fprintf(output, "\n\n\nIF_TRUE_%d:\n", elem.register_num);
+				else
+					fprintf(output, "\n\n\nIF_FALSE_%d:\n", elem.register_num);
+				last_token_is_if_or_else = false;
+				undefined_code_block_stack.pop();
+				elem = undefined_code_block_stack.top();
+			}
+			while (elem.block_type != WHILE_FINAL) {
+				temp.push(elem);
+				undefined_code_block_stack.pop();
+				elem = undefined_code_block_stack.top();
+			}
+			if (word.token == "Continue")
+				fprintf(output, "br label %%WHILE_COND_%d\n", elem.register_num);
+			else
+				fprintf(output, "br label %%WHILE_FINAL_%d\n", elem.register_num);
+			while (!temp.empty()) {
+				elem = temp.top();
+				temp.pop();
+				undefined_code_block_stack.push(elem);
+			}
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "Semicolon")
+				exit_();
+			word = get_symbol(input);
+			need_br = false;
+			return;
+		}
+			// putch 语句
+		else if (word.token == "putch") {
 			if (!can_deal_multiply_stmt) {
 				if (can_deal_stmt_left == 0)
 					return;
@@ -376,7 +442,9 @@ void Stmt(FILE *file) {
 
 			word = get_symbol(file);
 			return;
-		} else if (word.token == "putint") {
+		}
+			// putint 语句
+		else if (word.token == "putint") {
 			if (!can_deal_multiply_stmt) {
 				if (can_deal_stmt_left == 0)
 					return;
@@ -602,7 +670,7 @@ void CompUnit(FILE *in, FILE *out) {
 		exit_();
 }
 
-void Cond(FILE *file, bool is_else_if_cond = false) {
+void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) {
 	number_stack_elem res = calcAntiPoland(file);
 	fprintf(output, "%%%d = icmp ne i32 ", register_num++);
 	if (res.is_variable)
@@ -610,11 +678,22 @@ void Cond(FILE *file, bool is_else_if_cond = false) {
 	else fprintf(output, "%d", res.token.num);
 	fprintf(output, ", 0\t; 将 i32 的值转化为 i1 形式，然后进行判断\n");
 
-	// 来自 else if 语句
-	if (is_else_if_cond) {
+	// 来自 while 循环语句
+	if (is_while_cond) {
+		fprintf(output, "br i1 %%%d, label %%WHILE_LOOP_%d, label %%WHILE_FINAL_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
+				register_num - 1, code_block_num, code_block_num);
+		// 在来自 while 循环的语句中，需要添加两个新的代码块
+		undefined_code_block_stack_elem elem;
+		elem.register_num = code_block_num++;
+		elem.block_type = WHILE_FINAL;
+		undefined_code_block_stack.push(elem);
+		elem.block_type = WHILE_LOOP;
+		undefined_code_block_stack.push(elem);
+	}
+		// 来自 else if 语句
+	else if (is_else_if_cond) {
 		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
-				register_num - 1,
-				code_block_num, code_block_num);
+				register_num - 1, code_block_num, code_block_num);
 		// 在来自 else if 的语句中，只需要向其中添加两个新的代码块
 		undefined_code_block_stack_elem elem;
 		elem.register_num = code_block_num++;
@@ -623,7 +702,6 @@ void Cond(FILE *file, bool is_else_if_cond = false) {
 		elem.block_type = IF_TRUE;
 		undefined_code_block_stack.push(elem);
 	}
-
 		//来自普通 if 语句
 	else {
 		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",

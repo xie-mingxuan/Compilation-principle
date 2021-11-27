@@ -16,6 +16,9 @@
 #define IF_TRUE 1
 #define IF_FALSE 2
 #define IF_FINAL 3
+#define WHILE_COND 4
+#define WHILE_LOOP 5
+#define WHILE_FINAL 6
 
 using namespace std;
 
@@ -118,7 +121,7 @@ void Stmt(FILE *);
 
 number_stack_elem Exp(FILE *);
 
-void Cond(FILE *, bool);
+void Cond(FILE *, bool, bool);
 
 void LVal(FILE *);
 
