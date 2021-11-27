@@ -714,9 +714,11 @@ string get_register(const return_token &token) {
 }
 
 string get_pointer(const return_token &token) {
-	for (auto &saved_token: variable_list) {
-		if (saved_token.token == token)
-			return saved_token.saved_pointer;
+	for (int layer = code_block_layer; layer >= 0; layer--) {
+		for (auto &variable: variable_list) {
+			if (variable.code_block_layer == layer && variable.token == token)
+				return variable.saved_pointer;
+		}
 	}
 	return "";
 }
