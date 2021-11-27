@@ -338,19 +338,23 @@ void Stmt(FILE *file) {
 			} else
 				Stmt(file);
 
-			if (!undefined_code_block_stack.empty() && undefined_code_block_stack.top().block_type <= IF_FINAL) {
-				undefined_code_block_stack_elem elem;
+			if (!undefined_code_block_stack.empty()) {
+				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				stack<undefined_code_block_stack_elem> temp;
-				while (elem.block_type != IF_FINAL) {
-					elem = undefined_code_block_stack.top();
-					undefined_code_block_stack.pop();
-					temp.push(elem);
-				}
-				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
-				while (!temp.empty()) {
-					elem = temp.top();
-					temp.pop();
-					undefined_code_block_stack.push(elem);
+				if (elem.block_type == WHILE_FINAL) {
+					fprintf(output, "br label %%WHILE_FINAL_%d\n", elem.register_num);
+				} else {
+					while (elem.block_type != IF_FINAL) {
+						undefined_code_block_stack.pop();
+						temp.push(elem);
+						elem = undefined_code_block_stack.top();
+					}
+					fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+					while (!temp.empty()) {
+						elem = temp.top();
+						temp.pop();
+						undefined_code_block_stack.push(elem);
+					}
 				}
 			}
 			need_br = false;
