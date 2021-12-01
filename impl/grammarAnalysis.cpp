@@ -283,7 +283,7 @@ void Stmt(FILE *file) {
 			word = get_symbol(file);
 
 			Cond(file, is_else_if, false);
-			is_else_if = false;
+			//is_else_if = false;
 
 			if (word.type != SYMBOL || word.token != "RPar")
 				exit_();
@@ -295,19 +295,42 @@ void Stmt(FILE *file) {
 			last_token_is_if_or_else = true;
 			Stmt(file);
 
+			if (is_else_if)
+				return;
+
 			if (word.type == IDENT && word.token == "Else") {
 				last_token_is_if_or_else = true;
 				word = get_symbol(file);
 
 				// 处理 else-if 语句
-				if (word.type == IDENT && word.token == "If")
+				while (word.type == IDENT && word.token == "If") {
 					is_else_if = true;
-				bool can_deal_multiply_stmt_temp_1 = can_deal_multiply_stmt;
-				int can_deal_stmt_left_temp_1 = can_deal_stmt_left;
-				update_can_deal_multiply_stmt();
-				Stmt(file);
-				can_deal_stmt_left = can_deal_stmt_left_temp_1;
-				can_deal_multiply_stmt = can_deal_multiply_stmt_temp_1;
+					bool can_deal_multiply_stmt_temp_1 = can_deal_multiply_stmt;
+					int can_deal_stmt_left_temp_1 = can_deal_stmt_left;
+					update_can_deal_multiply_stmt();
+					Stmt(file);
+					can_deal_stmt_left = can_deal_stmt_left_temp_1;
+					can_deal_multiply_stmt = can_deal_multiply_stmt_temp_1;
+
+					undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+					undefined_code_block_stack.pop();
+					print_code_block(elem);
+					print_variable_table();
+
+					if (word.type != IDENT || word.token != "Else")
+						break;
+					word = get_symbol(input);
+				}
+				is_else_if = false;
+				if (word.type != SYMBOL || word.token != "LBrace")
+					Stmt(input);
+				else {
+					word = get_symbol(input);
+					while (word.type != SYMBOL || word.token != "RBrace")
+						BlockItem(input);
+					word = get_symbol(input);
+				}
+
 			} else {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
