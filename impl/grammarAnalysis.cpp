@@ -336,10 +336,12 @@ void Stmt(FILE *file) {
 					can_deal_stmt_left--;
 					Stmt(file);
 				}
-			} else
-				Stmt(file);
+			} else {
+				while (word.type != SYMBOL || word.token != "RBrace")
+					Stmt(file);
+			}
 
-			if (!undefined_code_block_stack.empty()) {
+			if (!undefined_code_block_stack.empty() && need_br) {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				stack<undefined_code_block_stack_elem> temp;
 				if (elem.block_type == WHILE_FINAL) {
