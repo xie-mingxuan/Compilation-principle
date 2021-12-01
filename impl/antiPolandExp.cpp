@@ -339,6 +339,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
+				last_word_is_operator = false;
+				next_word_can_operator = true;
 			}
 				// 可能调用了 getch() 函数
 			else if (word.token == "getch") {
@@ -358,6 +360,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit(-1);
+				last_word_is_operator = false;
+				next_word_can_operator = true;
 			}
 				// 可能调用了 putint() 函数
 			else if (word.token == "putint") {
