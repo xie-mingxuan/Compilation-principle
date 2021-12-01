@@ -325,9 +325,12 @@ void Stmt(FILE *file) {
 				if (word.type != SYMBOL || word.token != "LBrace")
 					Stmt(input);
 				else {
+					code_block_layer++;
 					word = get_symbol(input);
 					while (word.type != SYMBOL || word.token != "RBrace")
 						BlockItem(input);
+					code_block_layer--;
+					update_variable_list();
 					word = get_symbol(input);
 				}
 
