@@ -341,8 +341,10 @@ void Stmt(FILE *file) {
 					update_variable_list();
 					word = get_symbol(input);
 				}
-				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+				if (need_br)
+					fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
 				last_token_is_if_or_else = false;
+				need_br = true;
 			} else {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
@@ -450,15 +452,15 @@ void Stmt(FILE *file) {
 		else if (word.token == "Continue" || word.token == "Break") {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			stack<undefined_code_block_stack_elem> temp;
-			if (last_token_is_if_or_else) {
-				if (elem.block_type == IF_TRUE)
-					fprintf(output, "\n\n\nIF_TRUE_%d:\n", elem.register_num);
-				else
-					fprintf(output, "\n\n\nIF_FALSE_%d:\n", elem.register_num);
-				last_token_is_if_or_else = false;
-				undefined_code_block_stack.pop();
-				elem = undefined_code_block_stack.top();
-			}
+//			if (last_token_is_if_or_else) {
+//				if (elem.block_type == IF_TRUE)
+//					fprintf(output, "\n\n\nIF_TRUE_%d:\n", elem.register_num);
+//				else
+//					fprintf(output, "\n\n\nIF_FALSE_%d:\n", elem.register_num);
+//				last_token_is_if_or_else = false;
+//				undefined_code_block_stack.pop();
+//				elem = undefined_code_block_stack.top();
+//			}
 			while (elem.block_type != WHILE_FINAL) {
 				temp.push(elem);
 				undefined_code_block_stack.pop();
