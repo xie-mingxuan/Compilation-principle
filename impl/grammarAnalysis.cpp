@@ -367,6 +367,7 @@ void Stmt(FILE *file) {
 				exit_();
 			fprintf(output, "br label %%WHILE_COND_%d\n", code_block_num);
 			fprintf(output, "\n\n\nWHILE_COND_%d:\t; while 循环的判断条件\n", code_block_num);
+			print_variable_table(); // TODO 可以删掉
 			word = get_symbol(input);
 			Cond(input, false, true);
 			if (word.type != SYMBOL || word.token != "RPar")
@@ -378,6 +379,7 @@ void Stmt(FILE *file) {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 			fprintf(output, "\n\n\nWHILE_LOOP_%d:\t; while 循环的循环体\n", elem.register_num);
+			print_variable_table(); // TODO can be deleted
 			word = get_symbol(input);
 			while (word.type != SYMBOL || word.token != "RBrace")
 				BlockItem(input);
