@@ -852,6 +852,7 @@ void print_code_block(undefined_code_block_stack_elem elem) {
 	else
 		fprintf(output, "IF_FINAL_");
 	fprintf(output, "%d:\n", elem.register_num);
+	need_br = true;
 }
 
 void update_can_deal_multiply_stmt() {
