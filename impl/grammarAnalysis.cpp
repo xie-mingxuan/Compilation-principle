@@ -575,8 +575,8 @@ void Stmt(FILE *file) {
 		word = get_symbol(file);
 		while (word.type != SYMBOL || word.token != "RBrace")
 			BlockItem(file);
-		update_variable_list();
 		code_block_layer--;
+		update_variable_list();
 		last_token_is_if_or_else = last_token_is_if_or_else_temp;
 
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
