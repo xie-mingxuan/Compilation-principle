@@ -312,16 +312,24 @@ void Stmt(FILE *file) {
 					can_deal_stmt_left = can_deal_stmt_left_temp_1;
 					can_deal_multiply_stmt = can_deal_multiply_stmt_temp_1;
 
+					if (word.type != IDENT || word.token != "Else")
+						break;
+
+					word = get_symbol(input);
+					if (word.type != IDENT || word.token != "If")
+						break;
+
 					undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 					undefined_code_block_stack.pop();
 					print_code_block(elem);
 					print_variable_table();
-
-					if (word.type != IDENT || word.token != "Else")
-						break;
-					word = get_symbol(input);
 				}
+
 				is_else_if = false;
+				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+				undefined_code_block_stack.pop();
+				print_code_block(elem);
+				print_variable_table();
 				if (word.type != SYMBOL || word.token != "LBrace")
 					Stmt(input);
 				else {
@@ -333,7 +341,8 @@ void Stmt(FILE *file) {
 					update_variable_list();
 					word = get_symbol(input);
 				}
-
+				fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+				last_token_is_if_or_else = false;
 			} else {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
