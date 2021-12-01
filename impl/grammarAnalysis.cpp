@@ -12,7 +12,8 @@ list<variable_list_elem> variable_list;        // 这是所有定义的变量
 extern int register_num;
 bool last_token_is_if_or_else = false;        // 标记上一个 token 是不是 if 或 else
 bool is_else_if = false;                    // 标记是否为 else if 语句
-int code_block_num = 1;                        // 标记当前应该处理第几个代码块
+int if_else_code_block_num = 1;                // 标记当前应该处理第几个 if else 代码块
+int while_code_block_num = 1;                // 标记当前应该处理第几个 while 代码块
 bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句 stmt 语句则为真
 int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
 bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
@@ -365,14 +366,26 @@ void Stmt(FILE *file) {
 			word = get_symbol(input);
 			if (word.type != SYMBOL || word.token != "LPar")
 				exit_();
-			fprintf(output, "br label %%WHILE_COND_%d\n", code_block_num);
-			fprintf(output, "\n\n\nWHILE_COND_%d:\t; while 循环的判断条件\n", code_block_num);
+			fprintf(output, "br label %%WHILE_COND_%d\n", while_code_block_num);
+			fprintf(output, "\n\n\nWHILE_COND_%d:\t; while 循环的判断条件\n", while_code_block_num);
 			print_variable_table(); // TODO 可以删掉
 			word = get_symbol(input);
 			Cond(input, false, true);
 			if (word.type != SYMBOL || word.token != "RPar")
 				exit_();
 			word = get_symbol(input);
+
+			if (word.type == SYMBOL && word.token == "Semicolon") {
+				word = get_symbol(input);
+				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+				undefined_code_block_stack.pop();
+				undefined_code_block_stack.pop();
+				fprintf(output, "\n\n\nWHILE_LOOP_%d:\t; while 循环的循环体\n", elem.register_num);
+				fprintf(output, "br label %%WHILE_COND_%d\n", elem.register_num);
+				fprintf(output, "\n\n\nWHILE_FINAL_%d:\t; while 循环的结束\n", elem.register_num);
+				return;
+			}
+
 			if (word.type != SYMBOL || word.token != "LBrace")
 				exit_();
 			code_block_layer++;
@@ -474,6 +487,12 @@ void Stmt(FILE *file) {
 				exit(-1);
 
 			word = get_symbol(file);
+			return;
+		}
+			// 定义语句
+		else if (word.token == "int") {
+			word = get_symbol(file);
+			VarDef(input);
 			return;
 		}
 
@@ -691,10 +710,10 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 	// 来自 while 循环语句
 	if (is_while_cond) {
 		fprintf(output, "br i1 %%%d, label %%WHILE_LOOP_%d, label %%WHILE_FINAL_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
-				register_num - 1, code_block_num, code_block_num);
+				register_num - 1, while_code_block_num, while_code_block_num);
 		// 在来自 while 循环的语句中，需要添加两个新的代码块
 		undefined_code_block_stack_elem elem;
-		elem.register_num = code_block_num++;
+		elem.register_num = while_code_block_num++;
 		elem.block_type = WHILE_FINAL;
 		undefined_code_block_stack.push(elem);
 		elem.block_type = WHILE_LOOP;
@@ -703,10 +722,10 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 		// 来自 else if 语句
 	else if (is_else_if_cond) {
 		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
-				register_num - 1, code_block_num, code_block_num);
+				register_num - 1, if_else_code_block_num, if_else_code_block_num);
 		// 在来自 else if 的语句中，只需要向其中添加两个新的代码块
 		undefined_code_block_stack_elem elem;
-		elem.register_num = code_block_num++;
+		elem.register_num = if_else_code_block_num++;
 		elem.block_type = IF_FALSE;
 		undefined_code_block_stack.push(elem);
 		elem.block_type = IF_TRUE;
@@ -716,10 +735,10 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 	else {
 		fprintf(output, "br i1 %%%d, label %%IF_TRUE_%d, label %%IF_FALSE_%d\t; 将 i1 形式的值进行判断，然后选择跳转块\n",
 				register_num - 1,
-				code_block_num, code_block_num);
+				if_else_code_block_num, if_else_code_block_num);
 		// 保留下了接下来的三个代码块，分别用于 条件为真、条件为假、条件语句结束 的对应代码块，然后倒序入栈。
 		undefined_code_block_stack_elem elem;
-		elem.register_num = code_block_num++;
+		elem.register_num = if_else_code_block_num++;
 		elem.block_type = IF_FINAL;
 		undefined_code_block_stack.push(elem);
 		elem.block_type = IF_FALSE;
