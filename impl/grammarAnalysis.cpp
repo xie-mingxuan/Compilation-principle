@@ -504,7 +504,7 @@ void Stmt(FILE *file) {
 		// 无意义语句直接跳过
 		return_token x = word;
 		word = get_symbol(file);
-		if (word.type != SYMBOL && word.token != "Assign") {
+		if (word.type != SYMBOL || word.token != "Assign") {
 			while (word.type != SYMBOL || word.token != "Semicolon")
 				word = get_symbol(file);
 			word = get_symbol(file);
