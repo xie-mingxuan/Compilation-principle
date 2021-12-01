@@ -374,12 +374,15 @@ void Stmt(FILE *file) {
 			word = get_symbol(input);
 			if (word.type != SYMBOL || word.token != "LBrace")
 				exit_();
+			code_block_layer++;
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 			fprintf(output, "\n\n\nWHILE_LOOP_%d:\t; while 循环的循环体\n", elem.register_num);
 			word = get_symbol(input);
 			while (word.type != SYMBOL || word.token != "RBrace")
 				BlockItem(input);
+			code_block_layer--;
+			update_variable_list(); // TODO
 			if (need_br)
 				fprintf(output, "br label %%WHILE_COND_%d\n", elem.register_num);
 			else need_br = true;
@@ -754,7 +757,7 @@ bool is_variable_list_contains_in_all_layer(const return_token &token) {
 void update_variable_list() {
 	list<variable_list_elem> new_list;
 	for (const auto &variable: variable_list) {
-		if (variable.code_block_layer != code_block_layer)
+		if (variable.code_block_layer <= code_block_layer)
 			new_list.push_back(variable);
 	}
 	variable_list = new_list;
