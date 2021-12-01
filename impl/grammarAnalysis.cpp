@@ -342,7 +342,7 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				stack<undefined_code_block_stack_elem> temp;
 				if (elem.block_type == WHILE_FINAL) {
-					fprintf(output, "br label %%WHILE_FINAL_%d\n", elem.register_num);
+					fprintf(output, "br label %%WHILE_COND_%d\n", elem.register_num);
 				} else {
 					while (elem.block_type != IF_FINAL) {
 						undefined_code_block_stack.pop();
