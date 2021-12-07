@@ -28,7 +28,7 @@ typedef struct x {
 
 return_token get_symbol(FILE *file);
 
-bool is_cond_symbol(const return_token&);
+bool is_cond_symbol(const return_token &);
 
 
 #endif //C_LEXICALANALYSIS_H

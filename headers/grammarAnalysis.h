@@ -23,13 +23,16 @@
 using namespace std;
 
 typedef struct {
-	return_token token;
-	bool is_const = false;
-	bool is_global = false;
-	string saved_pointer;
-	string saved_register;
-	int code_block_layer;
-	int global_variable_value;
+	return_token token;                // 当前 token
+	bool is_const = false;            // 标记是否为 常量；默认值为 false
+	bool is_global = false;            // 标记是否为 全局变量；默认为 false
+	bool is_array = false;            // 标记是否为 数组；默认为 false
+	string saved_pointer;            // 记录当前变量的指针地址
+	string saved_register;            // 记录当前变量的数值存储地址
+	int code_block_layer;            // 记录当前变量的作用域
+	int global_variable_value;        // 如果是全局变量，记录该变量的值
+	int dimension = 0;                // 如果是数组，记录数组的维度，默认值为 0
+	int dimension_num[10] = {'\0'};    // 如果是数组，记录数组的维度大小，默认值为 0
 } variable_list_elem;
 
 typedef struct {
@@ -99,7 +102,7 @@ void BType(FILE *);
 
 void ConstDef(FILE *);
 
-number_stack_elem ConstInitVal(FILE *);
+number_stack_elem ConstInitVal(FILE *input, const return_token &token);
 
 number_stack_elem ConstExp(FILE *);
 
@@ -146,6 +149,10 @@ void EqExp(FILE *);
 void LAndExp(FILE *);
 
 void LOrExp(FILE *);
+
+void
+init_array(const variable_list_elem &array, int *current_pos, int dimension, bool is_const_define = false,
+		   bool is_global_define = false);
 
 void init();
 

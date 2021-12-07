@@ -207,7 +207,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 			next_word_can_operator = true;
 		} else if (word.type == "Symbol") {
 			// 如果操作符是分号或逗号，则证明运算结束，按照逆波兰表达式的方式进行运算然后输出
-			if (word.token == "Semicolon" || word.token == "Comma") {
+			if (word.token == "Semicolon" || word.token == "Comma" || word.token == "]" || word.token == "RBrace") {
 				if (!is_global_define) {
 					while (!operator_stack.empty())
 						pop_and_print(number_stack, operator_stack);
@@ -308,15 +308,65 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				}
 					// 局部变量定义
 				else {
-					if (is_const_define)
+					// 常量定义必须要求所有的变量均为常量
+					if (is_const_define) {
 						if (!is_variable_const(word)) {
 							printf("\n'%s' is not a const variable value!\n", word.token.c_str());
 							exit(-1);
 						}
-					number_stack_elem x;
-					x.is_variable = true;
-					x.variable = get_register(word);
-					number_stack.push(x);
+					}
+
+					// lab 7 要求对数组元素进行计算
+					variable_list_elem elem = get_variable(word);
+					if (elem.is_array) {
+						number_stack_elem array_dimension_value[10];
+						int offset = register_num;
+						fprintf(output, "%%%d = add i32 0, 0\t\t\t; 定义临时变量偏移量 0，用来计算数组元素的位置\n", register_num++);
+						for (int i = 1; i <= elem.dimension; i++) {
+							word = get_symbol(input);
+							if (word.type != SYMBOL || word.token != "[")
+								exit_();
+							word = get_symbol(input);
+							array_dimension_value[i] = calcAntiPoland(file, is_const_define, is_global_define);
+							if (word.type != SYMBOL || word.token != "]")
+								exit_();
+							if (i != elem.dimension) {
+								int number = 1; // 计算数组下一维度的元素数量
+								for (int j = i + 1; j <= elem.dimension; j++)
+									number *= elem.dimension_num[j];
+								if (array_dimension_value[i].is_variable)
+									fprintf(output, "%%%d = mul i32 %d, %s\n", register_num++, number,
+											array_dimension_value[i].variable.c_str());
+								else
+									fprintf(output, "%%%d = mul i32 %d, %d\n", register_num++, number,
+											array_dimension_value[i].token.num);
+								fprintf(output, "%%%d = add i32 %%%d, %%%d\n", register_num, offset, register_num - 1);
+								offset = register_num++;
+							} else {
+								if (array_dimension_value[i].is_variable)
+									fprintf(output, "%%%d = add i32 %%%d, %s\n", register_num, offset,
+											array_dimension_value[i].variable.c_str());
+								else
+									fprintf(output, "%%%d = add i32 %%%d, %d\n", register_num, offset,
+											array_dimension_value[i].token.num);
+								offset = register_num++;
+							}
+						}
+						fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+								elem.saved_pointer.c_str(), offset);
+						fprintf(output, "%%%d = load i32, i32* %%%d\t; 加载数组元素的值\n", register_num, register_num - 1);
+						number_stack_elem x;
+						x.is_variable = true;
+						stringstream stream;
+						stream << register_num++;
+						x.variable = "%" + stream.str();
+						number_stack.push(x);
+					} else {
+						number_stack_elem x;
+						x.is_variable = true;
+						x.variable = get_register(word);
+						number_stack.push(x);
+					}
 				}
 				last_word_is_operator = false;
 				next_word_can_operator = true;
@@ -408,13 +458,6 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 	//word = get_symbol(file);
 
 	return number_stack.top();
-//	if (number_stack.top().is_variable) return number_stack.top().variable;
-//	if(number_stack.top().token.token != "")
-//		return number_stack.top().token.token;
-//
-//	stringstream stream;
-//	stream << number_stack.top().token.num;
-//	return stream.str();
 }
 
 void print_number_stack_elem(const number_stack_elem &x) {

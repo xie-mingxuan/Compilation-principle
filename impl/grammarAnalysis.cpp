@@ -131,42 +131,75 @@ void ConstDef(FILE *file) {
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
 	if (is_variable_list_contains_in_this_layer(word))
 		exit_();
+	return_token x = word;
+
 	variable_list_elem elem;
 	elem.code_block_layer = code_block_layer;
 	elem.token = word;
 	elem.is_const = true;
+
+	// 判断该变量是否为数组
+	word = get_symbol(file);
+	bool is_array_define = false;
+	int dimension = 0;
+	while (word.type == SYMBOL && word.token == "[") {
+		dimension++;
+		is_array_define = true;
+		elem.is_array = true;
+		elem.dimension_num[dimension] = calcAntiPoland(input, true, false).token.num;
+		if (elem.dimension_num[dimension] <= 0)
+			exit_();
+		word = get_symbol(input);
+		if (word.type != SYMBOL || word.token != "]")
+			exit_();
+		word = get_symbol(input);
+	}
+	elem.dimension = dimension;
+
 	stringstream stream;
 	stream << register_num++;
 	elem.saved_pointer = "%" + stream.str();
 	variable_list.push_back(elem);
-	fprintf(output, "%s = alloca i32\t\t; define const variable_pointer '%s' at %s\n", elem.saved_pointer.c_str(),
-			word.token.c_str(), elem.saved_pointer.c_str());
-
-	return_token x = word;
-	string i = word.token;
-
-	word = get_symbol(file);
+	if (is_array_define) {
+		int total = 1;
+		for (int i = 1; i <= elem.dimension; i++)
+			total *= elem.dimension_num[dimension];
+		fprintf(output, "%s = alloca i32 [%d x i32]\t\t; 将常量数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
+				elem.token.token.c_str(), elem.saved_pointer.c_str());
+	} else {
+		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
+				elem.token.token.c_str(), elem.saved_pointer.c_str());
+	}
 
 	if (word.type != SYMBOL || word.token != "Assign")
 		exit_();
 	word = get_symbol(file);
 
-	number_stack_elem res = ConstInitVal(file);
-	if (res.is_variable)
-		fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
-	else
-		fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
-	fprintf(output, "%%%d = load i32, i32* %s\t\t; define const variable '%s'\n\n", register_num,
-			get_pointer(x).c_str(),
-			i.c_str());
-	stringstream stream1;
-	stream1 << register_num++;
-	set_register(x, "%" + stream1.str());
-
+	ConstInitVal(file, x);
 }
 
-number_stack_elem ConstInitVal(FILE *file) {
-	return ConstExp(file);
+number_stack_elem ConstInitVal(FILE *file, const return_token &token) {
+	variable_list_elem elem = get_variable(token);
+	if (!elem.is_array) {
+		number_stack_elem res = ConstExp(file);
+		if (res.is_variable)
+			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(token).c_str());
+		else
+			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(token).c_str());
+		fprintf(output, "%%%d = load i32, i32* %s\t\t; define const variable '%s'\n\n", register_num,
+				get_pointer(token).c_str(), token.token.c_str());
+		stringstream stream1;
+		stream1 << register_num++;
+		set_register(token, "%" + stream1.str());
+	} else {
+		// lab 7 要求可以定义数组元素
+		word = get_symbol(input);
+		if (word.type != SYMBOL || word.token != "LBrace")
+			exit_();
+		word = get_symbol(input);
+		int current_define_pos[10] = {'\0'};
+		init_array(elem, current_define_pos, 1, true, false);
+	}
 }
 
 /**
@@ -200,35 +233,69 @@ void VarDef(FILE *file) {
 	// 如果声明的变量已经被声明过了，就要退出；否则将其加入符号表
 	if (is_variable_list_contains_in_this_layer(word))
 		exit_();
+	return_token x = word;
+
 	variable_list_elem elem;
 	elem.code_block_layer = code_block_layer;
 	elem.token = word;
 	stringstream stream;
 	stream << register_num++;
 	elem.saved_pointer = "%" + stream.str();
-	variable_list.push_back(elem);
-	fprintf(output, "%s = alloca i32\t\t; define variable_point '%s' at %s\n", elem.saved_pointer.c_str(),
-			word.token.c_str(), elem.saved_pointer.c_str());
-
-	return_token x = word;
-	string i = word.token;
 
 	word = get_symbol(file);
+	bool is_array_define = false;
+	int dimension = 0;
+	while (word.type == SYMBOL && word.token == "[") {
+		dimension++;
+		is_array_define = true;
+		elem.is_array = true;
+		word = get_symbol(input);
+		elem.dimension_num[dimension] = calcAntiPoland(input, true, false).token.num;
+		if (elem.dimension_num[dimension] <= 0)
+			exit_();
+		if (word.type != SYMBOL || word.token != "]")
+			exit_();
+		word = get_symbol(input);
+	}
+	elem.dimension = dimension;
+
+	variable_list.push_back(elem);
+	if (is_array_define) {
+		int total = 1;
+		for (int i = 1; i <= elem.dimension; i++)
+			total *= elem.dimension_num[dimension];
+		fprintf(output, "%s = alloca i32 [%d x i32]\t\t; 将数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
+				elem.token.token.c_str(), elem.saved_pointer.c_str());
+	} else {
+		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
+				word.token.c_str(), elem.saved_pointer.c_str());
+		word = get_symbol(file);
+	}
 
 	if (word.type != SYMBOL || word.token != "Assign")
 		return;
 
 	word = get_symbol(file);
-	number_stack_elem res = InitVal(file);
-	if (res.is_variable)
-		fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
-	else
-		fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
-	fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n", register_num, get_pointer(x).c_str(),
-			i.c_str());
-	stringstream stream1;
-	stream1 << register_num++;
-	set_register(x, "%" + stream1.str());
+
+	if (is_array_define) {
+		// lab 7 要求可以定义数组元素
+		if (word.type != SYMBOL || word.token != "LBrace")
+			exit_();
+		int current_define_pos[10] = {'\0'};
+		word = get_symbol(input);
+		init_array(elem, current_define_pos, 1, false, false);
+	} else {
+		number_stack_elem res = InitVal(file);
+		if (res.is_variable)
+			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
+		else
+			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
+		fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n", register_num, get_pointer(x).c_str(),
+				elem.token.token.c_str());
+		stringstream stream1;
+		stream1 << register_num++;
+		set_register(x, "%" + stream1.str());
+	}
 }
 
 number_stack_elem InitVal(FILE *file) {
@@ -452,6 +519,7 @@ void Stmt(FILE *file) {
 		else if (word.token == "Continue" || word.token == "Break") {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			stack<undefined_code_block_stack_elem> temp;
+			// 这一段我也不知道为啥我写出来了，但是他好像没啥用，也不敢删
 //			if (last_token_is_if_or_else) {
 //				if (elem.block_type == IF_TRUE)
 //					fprintf(output, "\n\n\nIF_TRUE_%d:\n", elem.register_num);
@@ -666,13 +734,12 @@ void CompUnit(FILE *in, FILE *out) {
 	word = get_symbol(in);
 	// 全局变量定义
 	while (true) {
-		bool is_const_define = false;
 		string variable_name;
 		variable_list_elem elem;
 		elem.is_global = true;
 		if (word.type == IDENT && word.token == "const") {
 			word = get_symbol(input);
-			is_const_define = true;
+			elem.is_const = true;
 		}
 		if (word.type != IDENT || word.token != "int")
 			exit_();
@@ -687,15 +754,31 @@ void CompUnit(FILE *in, FILE *out) {
 			elem.token.token = variable_name;
 			elem.saved_pointer = "@" + variable_name;
 			elem.code_block_layer = 0;
-			if (is_const_define)
-				elem.is_const = true;
 
 			word = get_symbol(input);
 
+			while (word.type == SYMBOL && word.token == "[") {
+				elem.is_array = true;
+				elem.dimension++;
+				number_stack_elem res = calcAntiPoland(input, true, true);
+				elem.dimension_num[elem.dimension] = res.token.num;
+				if (word.type != SYMBOL || word.token != "]")
+					exit_();
+				word = get_symbol(input);
+			}
+
 			if (word.type == SYMBOL && (word.token == "Semicolon" || word.token == "Comma")) {
-				fprintf(output, "@%s = global i32 0\t; 定义全局变量 %s = 0\n", variable_name.c_str(),
-						variable_name.c_str());
-				elem.global_variable_value = 0;
+				if (elem.is_array) {
+					int total_num = 1;
+					for (int i = 1; i <= elem.dimension; i++)
+						total_num *= elem.dimension_num[i];
+					fprintf(output, "@%s = global [%d x i32] zeroinitializer\t; 定义全局数组并初始化为 0\n", variable_name.c_str(),
+							total_num);
+				} else {
+					fprintf(output, "@%s = global i32 0\t; 定义全局变量并初始化 %s = 0\n", variable_name.c_str(),
+							variable_name.c_str());
+					elem.global_variable_value = 0;
+				}
 				variable_list.push_back(elem);
 				// 遇到逗号继续
 				if (word.token == "Comma") {
@@ -711,11 +794,50 @@ void CompUnit(FILE *in, FILE *out) {
 
 			if (word.type != SYMBOL || word.token != "Assign")
 				exit_();
-			word = get_symbol(input);
-			number_stack_elem res = calcAntiPoland(input, true, true);
-			fprintf(output, "@%s = global i32 %d\t; 定义全局变量 %s = %d\n", variable_name.c_str(), res.token.num,
-					variable_name.c_str(), res.token.num);
-			elem.global_variable_value = res.token.num;
+			// 初始化全局数组
+			if (elem.is_array) {
+				int total_num = 1;
+				for (int i = 1; i <= elem.dimension; i++)
+					total_num *= elem.dimension_num[i];
+				fprintf(output, "@%s = global [%d x i32] [", variable_name.c_str(), total_num);
+
+				word = get_symbol(input);
+				if (word.type != SYMBOL || word.token != "LBrace")
+					exit_();
+				int dimension = 1;
+				int number = 0;
+				word = get_symbol(input);
+				while (dimension != 0) {
+					if (word.type == SYMBOL && word.token == "LBrace")
+						dimension++;
+					else if (word.type == SYMBOL && word.token == "RBrace") {
+						int dimension_total = 1;
+						for (int i = dimension; i <= elem.dimension; i++)
+							dimension_total *= elem.dimension_num[i];
+
+						for (int i = number + 1; i <= dimension_total; i++)
+							fprintf(output, "i32 0, ");
+						number = 0;
+						dimension--;
+					} else if (word.type == SYMBOL && word.token == "Comma") {}
+					else {
+						number_stack_elem res = calcAntiPoland(input, true, true);
+						fprintf(output, "i32 %d, ", res.token.num);
+						number++;
+					}
+					word = get_symbol(input);
+				}
+				fseek(output, -2, SEEK_CUR);
+				fprintf(output, "]\t; 初始化全局数组\n");
+			}
+				// 初始化全局变量
+			else {
+				word = get_symbol(input);
+				number_stack_elem res = calcAntiPoland(input, true, true);
+				fprintf(output, "@%s = global i32 %d\t; 定义全局变量 %s = %d\n", variable_name.c_str(), res.token.num,
+						variable_name.c_str(), res.token.num);
+				elem.global_variable_value = res.token.num;
+			}
 			variable_list.push_back(elem);
 			if (word.type == SYMBOL && (word.token == "Semicolon" || word.token == "Comma")) {
 				// 遇到逗号继续
@@ -910,4 +1032,41 @@ variable_list_elem get_variable(const return_token &token) {
 				return i;
 		}
 	}
+}
+
+void
+init_array(const variable_list_elem &array, int *current_pos, int dimension, bool is_const_define,
+		   bool is_global_define) {
+	while (word.type != SYMBOL || word.token != "RBrace") {
+		if (word.type == SYMBOL && word.token == "LBrace") {
+			current_pos[dimension + 1] = 0;
+			word = get_symbol(input);
+			init_array(array, current_pos, dimension + 1, is_const_define, is_global_define);
+		} else if (word.token == SYMBOL || word.token == "Comma") {
+			word = get_symbol(input);
+		}
+		else {
+			if (dimension != array.dimension)
+				exit(-2);
+			int offset = 0;
+			for (int i = 1; i < dimension; i++) {
+				int base = 1;
+				for (int j = i + 1; j <= dimension; j++)
+					base *= array.dimension_num[j];
+				offset += base * current_pos[i];
+			}
+			offset += current_pos[dimension];
+			int pointer_pos = register_num++;
+			fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %d\n", pointer_pos, array.saved_pointer.c_str(),
+					offset);
+			number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
+			if (res.is_variable)
+				fprintf(output, "store i32 %s, i32* %%%d\n", res.variable.c_str(), pointer_pos);
+			else
+				fprintf(output, "store i32 %d, i32* %%%d\n", res.token.num, pointer_pos);
+			current_pos[dimension]++;
+		}
+	}
+	current_pos[dimension - 1]++;
+	word = get_symbol(input);
 }

@@ -33,7 +33,6 @@ int transNum(int base) {
 }
 
 return_token get_symbol(FILE *file) {
-	//fseek(file, 0, SEEK_SET);
 	clearToken();
 	return_token returnToken;
 	returnToken.type = "Symbol";
@@ -212,6 +211,10 @@ return_token get_symbol(FILE *file) {
 		else if (judgeLetter::isRBracket(c))
 			//printf("RPar\n");
 			returnToken.token = "RPar";
+		else if (judgeLetter::isLBracketMid(c))
+			returnToken.token = "[";
+		else if (judgeLetter::isRBracketMid(c))
+			returnToken.token = "]";
 		else if (judgeLetter::isLBracketLarge(c))
 			//printf("LBrace\n");
 			returnToken.token = "LBrace";
@@ -349,7 +352,7 @@ return_token get_symbol(FILE *file) {
 	return returnToken;
 }
 
-bool is_cond_symbol(const return_token & returnToken) {
+bool is_cond_symbol(const return_token &returnToken) {
 	if (returnToken.type != "Symbol")
 		return false;
 
