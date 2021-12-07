@@ -268,8 +268,7 @@ void VarDef(FILE *file) {
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 	} else {
 		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
-				word.token.c_str(), elem.saved_pointer.c_str());
-		word = get_symbol(file);
+				elem.token.token.c_str(), elem.saved_pointer.c_str());
 	}
 
 	if (word.type != SYMBOL || word.token != "Assign")
@@ -760,6 +759,7 @@ void CompUnit(FILE *in, FILE *out) {
 			while (word.type == SYMBOL && word.token == "[") {
 				elem.is_array = true;
 				elem.dimension++;
+				word = get_symbol(input);
 				number_stack_elem res = calcAntiPoland(input, true, true);
 				elem.dimension_num[elem.dimension] = res.token.num;
 				if (word.type != SYMBOL || word.token != "]")
@@ -806,6 +806,7 @@ void CompUnit(FILE *in, FILE *out) {
 					exit_();
 				int dimension = 1;
 				int number = 0;
+				int total_number = 0;
 				word = get_symbol(input);
 				while (dimension != 0) {
 					if (word.type == SYMBOL && word.token == "LBrace")
@@ -814,9 +815,15 @@ void CompUnit(FILE *in, FILE *out) {
 						int dimension_total = 1;
 						for (int i = dimension; i <= elem.dimension; i++)
 							dimension_total *= elem.dimension_num[i];
-
-						for (int i = number + 1; i <= dimension_total; i++)
-							fprintf(output, "i32 0, ");
+						if (dimension == 1) {
+							for (int i = total_number + 1; i <= dimension_total; i++)
+								fprintf(output, "i32 0, ");
+						} else {
+							for (int i = number + 1; i <= dimension_total; i++) {
+								fprintf(output, "i32 0, ");
+								total_number++;
+							}
+						}
 						number = 0;
 						dimension--;
 					} else if (word.type == SYMBOL && word.token == "Comma") {}
@@ -824,6 +831,8 @@ void CompUnit(FILE *in, FILE *out) {
 						number_stack_elem res = calcAntiPoland(input, true, true);
 						fprintf(output, "i32 %d, ", res.token.num);
 						number++;
+						total_number++;
+						continue;
 					}
 					word = get_symbol(input);
 				}
@@ -1044,8 +1053,7 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 			init_array(array, current_pos, dimension + 1, is_const_define, is_global_define);
 		} else if (word.token == SYMBOL || word.token == "Comma") {
 			word = get_symbol(input);
-		}
-		else {
+		} else {
 			if (dimension != array.dimension)
 				exit(-2);
 			int offset = 0;
