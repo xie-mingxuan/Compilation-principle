@@ -615,9 +615,57 @@ void Stmt(FILE *file) {
 			exit_();
 		}
 
-		// 无意义语句直接跳过
 		return_token x = word;
+		string left_value_pointer;
+
+		variable_list_elem left_value = get_variable(x);
+		if (left_value.is_array) {
+			number_stack_elem array_dimension_value[10];
+			int offset = register_num;
+			fprintf(output, "%%%d = add i32 0, 0\t\t\t; 定义临时变量偏移量 0，用来计算数组元素的位置\n", register_num++);
+			for (int i = 1; i <= left_value.dimension; i++) {
+				word = get_symbol(input);
+				if (word.type != SYMBOL || word.token != "[")
+					exit_();
+				word = get_symbol(input);
+				array_dimension_value[i] = calcAntiPoland(file, false, false);
+				if (word.type != SYMBOL || word.token != "]")
+					exit_();
+				if (i != left_value.dimension) {
+					int number = 1; // 计算数组下一维度的元素数量
+					for (int j = i + 1; j <= left_value.dimension; j++)
+						number *= left_value.dimension_num[j];
+					if (array_dimension_value[i].is_variable)
+						fprintf(output, "%%%d = mul i32 %d, %s\n", register_num++, number,
+								array_dimension_value[i].variable.c_str());
+					else
+						fprintf(output, "%%%d = mul i32 %d, %d\n", register_num++, number,
+								array_dimension_value[i].token.num);
+					fprintf(output, "%%%d = add i32 %%%d, %%%d\n", register_num, offset, register_num - 1);
+					offset = register_num++;
+				} else {
+					if (array_dimension_value[i].is_variable)
+						fprintf(output, "%%%d = add i32 %%%d, %s\n", register_num, offset,
+								array_dimension_value[i].variable.c_str());
+					else
+						fprintf(output, "%%%d = add i32 %%%d, %d\n", register_num, offset,
+								array_dimension_value[i].token.num);
+					offset = register_num++;
+				}
+			}
+			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n",
+					register_num++, left_value.variable_type.c_str(), left_value.variable_type.c_str(),
+					left_value.saved_pointer.c_str(), offset);
+			stringstream stream;
+			stream << register_num - 1;
+			left_value_pointer = "%" + stream.str();
+		} else {
+			left_value_pointer = get_pointer(x);
+		}
+
 		word = get_symbol(file);
+
+		// 无意义语句直接跳过
 		if (word.type != SYMBOL || word.token != "Assign") {
 			while (word.type != SYMBOL || word.token != "Semicolon")
 				word = get_symbol(file);
@@ -648,14 +696,17 @@ void Stmt(FILE *file) {
 		word = get_symbol(file);
 		number_stack_elem res = calcAntiPoland(file);
 		if (res.is_variable)
-			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
+			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), left_value_pointer.c_str());
 		else
-			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
-		fprintf(output, "%%%d = load i32, i32* %s\t\t; set variable '%s'\n", register_num, get_pointer(x).c_str(),
-				x.token.c_str());
-		stringstream stream;
-		stream << register_num++;
-		set_register(x, "%" + stream.str());
+			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, left_value_pointer.c_str());
+		// 非数组元素需要修改对应的储值寄存器
+		if (!left_value.is_array) {
+			fprintf(output, "%%%d = load i32, i32* %s\t\t; set variable '%s'\n", register_num,
+					left_value_pointer.c_str(), x.token.c_str());
+			stringstream stream;
+			stream << register_num++;
+			set_register(x, "%" + stream.str());
+		}
 
 		if (word.type != SYMBOL || word.token != "Semicolon")
 			exit_();
@@ -1081,7 +1132,8 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 			}
 			offset += current_pos[dimension];
 			int pointer_pos = register_num++;
-			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %d\n", pointer_pos, array.variable_type.c_str(),
+			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %d\n", pointer_pos,
+					array.variable_type.c_str(),
 					array.variable_type.c_str(), array.saved_pointer.c_str(), offset);
 			number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
 			if (res.is_variable)
