@@ -1104,7 +1104,7 @@ variable_list_elem get_variable(const return_token &token) {
 	int layer = code_block_layer;
 	for (; layer >= 0; layer--) {
 		for (auto &i: variable_list) {
-			if (token == i.token)
+			if (token == i.token && layer == i.code_block_layer)
 				return i;
 		}
 	}
