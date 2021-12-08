@@ -434,7 +434,7 @@ void Stmt(FILE *file) {
 				if (need_br) {
 					stack<undefined_code_block_stack_elem> temp;
 					undefined_code_block_stack_elem elem1 = undefined_code_block_stack.top();
-					while(elem1.block_type != IF_FINAL) {
+					while (elem1.block_type != IF_FINAL) {
 						temp.push(elem1);
 						undefined_code_block_stack.pop();
 						elem1 = undefined_code_block_stack.top();
@@ -1085,7 +1085,14 @@ string get_register(const return_token &token) {
 	for (int layer = code_block_layer; layer >= 0; layer--) {
 		for (auto &variable: variable_list) {
 			if (variable.code_block_layer == layer && variable.token == token) {
-				if (variable.saved_register.empty()) {
+				if (variable.code_block_layer == 0) {
+					fprintf(output, "%%%d = load %s, %s* %s\t; 代码块中临时调用全局变量 %s\n", register_num,
+							variable.variable_type.c_str(), variable.variable_type.c_str(),
+							variable.saved_pointer.c_str(), variable.token.token.c_str());
+					stringstream stream;
+					stream << register_num++;
+					variable.saved_register = "%" + stream.str();
+				} else if (variable.saved_register.empty()) {
 					printf("%s has never been initialized!\n", token.token.c_str());
 					exit(-1);
 				}
@@ -1108,6 +1115,8 @@ string get_pointer(const return_token &token) {
 
 void print_variable_table() {
 	for (auto &i: variable_list) {
+		if (i.is_global)
+			continue;
 		fprintf(output, "%%%d = load %s, %s %s\t; 代码块中重新定义变量 %s\n", register_num,
 				i.variable_type.c_str(), (i.variable_type + "*").c_str(), i.saved_pointer.c_str(),
 				i.token.token.c_str());
