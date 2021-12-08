@@ -739,6 +739,8 @@ void Stmt(FILE *file) {
 		last_token_is_if_or_else = false;
 	} else if (word.type == SYMBOL && word.token == "LBrace") {
 		int final_label;
+		bool is_else_if_temp = is_else_if;
+		is_else_if = false;
 		code_block_layer++;
 		bool last_token_is_if_or_else_temp = last_token_is_if_or_else;
 		if (last_token_is_if_or_else) {
@@ -772,6 +774,7 @@ void Stmt(FILE *file) {
 		code_block_layer--;
 		update_variable_list();
 		last_token_is_if_or_else = last_token_is_if_or_else_temp;
+		is_else_if = is_else_if_temp;
 
 		// 如果仍然有未定义的代码段，跳转到最近的 IF_FINAL 代码段
 		if (last_token_is_if_or_else && !undefined_code_block_stack.empty()) {
@@ -854,6 +857,11 @@ void CompUnit(FILE *in, FILE *out) {
 				// 遇到逗号继续
 				if (word.token == "Comma") {
 					word = get_symbol(input);
+					elem.dimension = 0;
+					elem.saved_pointer = "";
+					elem.variable_type = "";
+					memset(elem.dimension_num, 0, sizeof(int) * 10);
+					elem.is_array = false;
 					continue;
 				}
 					// 遇到分号则终止本句话
