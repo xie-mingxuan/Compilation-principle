@@ -273,7 +273,7 @@ void VarDef(FILE *file) {
 		stream1 << total;
 		elem.variable_type = "[" + stream1.str() + " x i32]";
 	} else {
-		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
+		fprintf(output, "%s = alloca i32\t\t; 将变量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		elem.variable_type = "i32";
 	}
