@@ -164,7 +164,7 @@ void ConstDef(FILE *file) {
 		int total = 1;
 		for (int i = 1; i <= elem.dimension; i++)
 			total *= elem.dimension_num[dimension];
-		fprintf(output, "%s = alloca i32 [%d x i32]\t\t; 将常量数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
+		fprintf(output, "%s = alloca [%d x i32]\t\t; 将常量数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		stringstream stream1;
 		stream1 << total;
@@ -267,7 +267,7 @@ void VarDef(FILE *file) {
 		int total = 1;
 		for (int i = 1; i <= elem.dimension; i++)
 			total *= elem.dimension_num[dimension];
-		fprintf(output, "%s = alloca i32 [%d x i32]\t\t; 将数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
+		fprintf(output, "%s = alloca [%d x i32]\t\t; 将数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		stringstream stream1;
 		stream1 << total;
