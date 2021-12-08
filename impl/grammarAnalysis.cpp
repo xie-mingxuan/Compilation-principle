@@ -1081,8 +1081,8 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 			}
 			offset += current_pos[dimension];
 			int pointer_pos = register_num++;
-			fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %d\n", pointer_pos, array.saved_pointer.c_str(),
-					offset);
+			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 %d\n", pointer_pos, array.variable_type.c_str(),
+					array.variable_type.c_str(), array.saved_pointer.c_str(), offset);
 			number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
 			if (res.is_variable)
 				fprintf(output, "store i32 %s, i32* %%%d\n", res.variable.c_str(), pointer_pos);
