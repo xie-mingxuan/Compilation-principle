@@ -294,7 +294,9 @@ void VarDef(FILE *file) {
 			int total = 1;
 			for (int i = 1; i <= elem.dimension; i++)
 				total *= elem.dimension_num[i];
-			fprintf(output, "call void @memset(i32* %s, i32 0, i32 %d)\n", elem.saved_pointer.c_str(), total);
+			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 0\n",
+					register_num++, elem.variable_type.c_str(), elem.variable_type.c_str(), elem.saved_pointer.c_str());
+			fprintf(output, "call void @memset(i32* %%%d, i32 0, i32 %d)\n", register_num - 1, total);
 		} else
 			init_array(elem, current_define_pos, 1, false, false);
 	} else {
