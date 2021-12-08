@@ -168,11 +168,11 @@ void ConstDef(FILE *file) {
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		stringstream stream1;
 		stream1 << total;
-		elem.variable_type = "[" + stream1.str() + " x i32]*";
+		elem.variable_type = "[" + stream1.str() + " x i32]";
 	} else {
 		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
-		elem.variable_type = "i32*";
+		elem.variable_type = "i32";
 	}
 
 	if (word.type != SYMBOL || word.token != "Assign")
@@ -271,11 +271,11 @@ void VarDef(FILE *file) {
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		stringstream stream1;
 		stream1 << total;
-		elem.variable_type = "[" + stream1.str() + " x i32]*";
+		elem.variable_type = "[" + stream1.str() + " x i32]";
 	} else {
 		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
-		elem.variable_type = "i32*";
+		elem.variable_type = "i32";
 	}
 	variable_list.push_back(elem);
 
@@ -784,12 +784,12 @@ void CompUnit(FILE *in, FILE *out) {
 							total_num);
 					stringstream stream;
 					stream << total_num;
-					elem.variable_type = "[" + stream.str() + " x i32]*";
+					elem.variable_type = "[" + stream.str() + " x i32]";
 				} else {
 					fprintf(output, "@%s = global i32 0\t; 定义全局变量并初始化 %s = 0\n", variable_name.c_str(),
 							variable_name.c_str());
 					elem.global_variable_value = 0;
-					elem.variable_type = "i32*";
+					elem.variable_type = "i32";
 				}
 				variable_list.push_back(elem);
 				// 遇到逗号继续
@@ -814,7 +814,7 @@ void CompUnit(FILE *in, FILE *out) {
 				fprintf(output, "@%s = global [%d x i32] [", variable_name.c_str(), total_num);
 				stringstream stream;
 				stream << total_num;
-				elem.variable_type = "[" + stream.str() + " x i32]*";
+				elem.variable_type = "[" + stream.str() + " x i32]";
 
 				word = get_symbol(input);
 				if (word.type != SYMBOL || word.token != "LBrace")
@@ -861,7 +861,7 @@ void CompUnit(FILE *in, FILE *out) {
 				fprintf(output, "@%s = global i32 %d\t; 定义全局变量 %s = %d\n", variable_name.c_str(), res.token.num,
 						variable_name.c_str(), res.token.num);
 				elem.global_variable_value = res.token.num;
-				elem.variable_type = "i32 *";
+				elem.variable_type = "i32";
 			}
 			variable_list.push_back(elem);
 			if (word.type == SYMBOL && (word.token == "Semicolon" || word.token == "Comma")) {
@@ -1018,8 +1018,9 @@ string get_pointer(const return_token &token) {
 
 void print_variable_table() {
 	for (auto &i: variable_list) {
-		fprintf(output, "%%%d = load i32, %s %s\t; 代码块中重新定义变量 %s\n", register_num,
-				i.variable_type.c_str(), i.saved_pointer.c_str(), i.token.token.c_str());
+		fprintf(output, "%%%d = load %s, %s %s\t; 代码块中重新定义变量 %s\n", register_num,
+				i.variable_type.c_str(), (i.variable_type + "*").c_str(), i.saved_pointer.c_str(),
+				i.token.token.c_str());
 		stringstream stream;
 		stream << register_num++;
 		i.saved_register = "%" + stream.str();
