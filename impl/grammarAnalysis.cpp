@@ -385,6 +385,7 @@ void Stmt(FILE *file) {
 				word = get_symbol(file);
 
 				// 处理 else-if 语句
+				bool else_if_have_else_stmt = false; // 记录 else if 语句是否有最终的 else
 				while (word.type == IDENT && word.token == "If") {
 					is_else_if = true;
 					bool can_deal_multiply_stmt_temp_1 = can_deal_multiply_stmt;
@@ -394,12 +395,16 @@ void Stmt(FILE *file) {
 					can_deal_stmt_left = can_deal_stmt_left_temp_1;
 					can_deal_multiply_stmt = can_deal_multiply_stmt_temp_1;
 
-					if (word.type != IDENT || word.token != "Else")
+					if (word.type != IDENT || word.token != "Else") {
+						else_if_have_else_stmt = false;
 						break;
+					}
 
 					word = get_symbol(input);
-					if (word.type != IDENT || word.token != "If")
+					if (word.type != IDENT || word.token != "If") {
+						else_if_have_else_stmt = true;
 						break;
+					}
 
 					undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 					undefined_code_block_stack.pop();
@@ -412,19 +417,35 @@ void Stmt(FILE *file) {
 				undefined_code_block_stack.pop();
 				print_code_block(elem);
 				print_variable_table();
-				if (word.type != SYMBOL || word.token != "LBrace")
-					Stmt(input);
-				else {
-					code_block_layer++;
-					word = get_symbol(input);
-					while (word.type != SYMBOL || word.token != "RBrace")
-						BlockItem(input);
-					code_block_layer--;
-					update_variable_list();
-					word = get_symbol(input);
+				if (else_if_have_else_stmt) {
+					if (word.type != SYMBOL || word.token != "LBrace")
+						Stmt(input);
+					else {
+						code_block_layer++;
+						word = get_symbol(input);
+						last_token_is_if_or_else = false;
+						while (word.type != SYMBOL || word.token != "RBrace")
+							BlockItem(input);
+						code_block_layer--;
+						update_variable_list();
+						word = get_symbol(input);
+					}
 				}
-				if (need_br)
-					fprintf(output, "br label %%IF_FINAL_%d\n", elem.register_num);
+				if (need_br) {
+					stack<undefined_code_block_stack_elem> temp;
+					undefined_code_block_stack_elem elem1 = undefined_code_block_stack.top();
+					while(elem1.block_type != IF_FINAL) {
+						temp.push(elem1);
+						undefined_code_block_stack.pop();
+						elem1 = undefined_code_block_stack.top();
+					}
+					fprintf(output, "br label %%IF_FINAL_%d\n", elem1.register_num);
+					while (!temp.empty()) {
+						elem1 = temp.top();
+						temp.pop();
+						undefined_code_block_stack.push(elem1);
+					}
+				}
 				last_token_is_if_or_else = false;
 				need_br = true;
 			} else {
@@ -765,8 +786,8 @@ void Stmt(FILE *file) {
 //			fprintf(output, "\n\n\n%d:\t; 定义代码块 %d\n", elem.register_num, elem.register_num);
 			print_code_block(elem);
 			print_variable_table();
-			last_token_is_if_or_else = false;
 		}
+		last_token_is_if_or_else = false;
 
 		word = get_symbol(file);
 		while (word.type != SYMBOL || word.token != "RBrace")
