@@ -266,7 +266,7 @@ void VarDef(FILE *file) {
 	if (is_array_define) {
 		int total = 1;
 		for (int i = 1; i <= elem.dimension; i++)
-			total *= elem.dimension_num[dimension];
+			total *= elem.dimension_num[i];
 		fprintf(output, "%s = alloca [%d x i32]\t\t; 将数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		stringstream stream1;
@@ -290,7 +290,13 @@ void VarDef(FILE *file) {
 			exit_();
 		int current_define_pos[10] = {'\0'};
 		word = get_symbol(input);
-		init_array(elem, current_define_pos, 1, false, false);
+		if (word.type == SYMBOL && word.token == "RBrace") {
+			int total = 1;
+			for (int i = 1; i <= elem.dimension; i++)
+				total *= elem.dimension_num[i];
+			fprintf(output, "call void @memset(i32* %s, i32 0, i32 %d)\n", elem.saved_pointer.c_str(), total);
+		} else
+			init_array(elem, current_define_pos, 1, false, false);
 	} else {
 		number_stack_elem res = InitVal(file);
 		if (res.is_variable)
@@ -986,10 +992,12 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 }
 
 void init() {
-	fprintf(output, "declare i32 @getint()\n"
+	fprintf(output, "\n"
+					"declare i32 @getint()\n"
 					"declare void @putint(i32)\n"
 					"declare i32 @getch()\n"
-					"declare void @putch(i32)\n\n");
+					"declare void @putch(i32)\n"
+					"declare void @memset(i32*, i32, i32)\n\n");
 }
 
 bool is_variable_list_contains_in_this_layer(const return_token &token) {
