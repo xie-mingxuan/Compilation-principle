@@ -729,7 +729,7 @@ void Stmt(FILE *file) {
 		else
 			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, left_value_pointer.c_str());
 		// 非数组元素需要修改对应的储值寄存器
-		if (!left_value.is_array) {
+		if (!left_value.is_array && !left_value.is_global) {
 			fprintf(output, "%%%d = load i32, i32* %s\t\t; set variable '%s'\n", register_num,
 					left_value_pointer.c_str(), x.token.c_str());
 			stringstream stream;
@@ -1115,8 +1115,8 @@ string get_pointer(const return_token &token) {
 
 void print_variable_table() {
 	for (auto &i: variable_list) {
-//		if (i.is_global)
-//			continue;
+		if (i.is_global)
+			continue;
 		fprintf(output, "%%%d = load %s, %s %s\t; 代码块中重新定义变量 %s\n", register_num,
 				i.variable_type.c_str(), (i.variable_type + "*").c_str(), i.saved_pointer.c_str(),
 				i.token.token.c_str());
