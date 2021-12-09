@@ -88,7 +88,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		print_number_stack_elem(x2);
 		stream2 << register_num++;
 		x2.is_variable = true;
-		x2.variable = "%" + stream.str();
+		x2.variable = "%" + stream2.str();
 
 		fprintf(output, "\n%%%d = ", register_num);
 		if (op.token == "LogicAnd")
