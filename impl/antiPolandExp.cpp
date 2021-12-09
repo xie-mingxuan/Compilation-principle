@@ -97,6 +97,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 			fprintf(output, "or i1 ");
 		else
 			exit_();
+		is_icmp_calc = true;
 	} else {
 		if (op.token == "Eq")
 			fprintf(output, "icmp eq i32 ");
