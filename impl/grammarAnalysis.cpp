@@ -598,8 +598,11 @@ void Stmt(FILE *file) {
 				exit(-1);
 
 			number_stack_elem res = calcAntiPoland(file);
-			if (res.is_variable)
-				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
+			if (res.is_variable) {
+//				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
+				fprintf(output, "call void @putint(i32 %s)\n", res.variable.c_str());
+				fprintf(output, "call void @putch(i32 32)\n");
+			}
 			else
 				fprintf(output, "call void @putch(i32 %d)\n", res.token.num);
 
