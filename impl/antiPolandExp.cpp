@@ -75,11 +75,29 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		fprintf(output, "sdiv i32 ");
 	else if (op.token == "Mod")
 		fprintf(output, "sdiv i32 ");
-	else if (op.token == "LogicAnd")
-		fprintf(output, "and i32 ");
-	else if (op.token == "LogicOr")
-		fprintf(output, "or i32 ");
-	else {
+	else if (op.token == "LogicAnd" || op.token == "LogicOr") {
+		stringstream stream;
+		fprintf(output, "icmp ne i32 0 ");
+		print_number_stack_elem(x1);
+		stream << register_num++;
+		x1.is_variable = true;
+		x1.variable = "%" + stream.str();
+
+		stringstream stream2;
+		fprintf(output, "\n%%%d = icmp ne i32 0 ", register_num);
+		print_number_stack_elem(x2);
+		stream2 << register_num++;
+		x2.is_variable = true;
+		x2.variable = "%" + stream.str();
+
+		fprintf(output, "\n%%%d = ", register_num);
+		if (op.token == "LogicAnd")
+			fprintf(output, "and i1 ");
+		else if (op.token == "LogicOr")
+			fprintf(output, "or i1 ");
+		else
+			exit_();
+	} else {
 		if (op.token == "Eq")
 			fprintf(output, "icmp eq i32 ");
 		else if (op.token == "NotEq")
@@ -92,7 +110,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 			fprintf(output, "icmp sge i32 ");
 		else if (op.token == "Gt")
 			fprintf(output, "icmp sgt i32 ");
-		else exit(-1);
+		else exit_();
 		is_icmp_calc = true;
 	}
 
