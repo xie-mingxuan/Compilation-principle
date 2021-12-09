@@ -1115,8 +1115,8 @@ string get_pointer(const return_token &token) {
 
 void print_variable_table() {
 	for (auto &i: variable_list) {
-		if (i.is_global)
-			continue;
+//		if (i.is_global)
+//			continue;
 		fprintf(output, "%%%d = load %s, %s %s\t; 代码块中重新定义变量 %s\n", register_num,
 				i.variable_type.c_str(), (i.variable_type + "*").c_str(), i.saved_pointer.c_str(),
 				i.token.token.c_str());
