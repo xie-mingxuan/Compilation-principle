@@ -396,9 +396,6 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				// 可能调用了 getch() 函数
 			else if (word.token == "getch") {
 				fprintf(output, "%%%d = call i32 @getch()\n", register_num);
-				fprintf(output, "call void @putch(i32 %%%d)\n", register_num);
-				fprintf(output, "call void @putch(i32 32)\n");
-				// TODO fix this fucking debugging code!!!
 				number_stack_elem x;
 				x.is_variable = true;
 				stringstream stream;
