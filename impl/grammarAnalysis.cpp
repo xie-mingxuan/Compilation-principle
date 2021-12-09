@@ -599,9 +599,10 @@ void Stmt(FILE *file) {
 
 			number_stack_elem res = calcAntiPoland(file);
 			if (res.is_variable) {
-//				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
-				fprintf(output, "call void @putint(i32 %s)\n", res.variable.c_str());
-				fprintf(output, "call void @putch(i32 32)\n");
+				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
+//				fprintf(output, "call void @putint(i32 %s)\n", res.variable.c_str());
+//				fprintf(output, "call void @putch(i32 32)\n");
+// TODO fix this fucking debugging code!!!!!!
 			}
 			else
 				fprintf(output, "call void @putch(i32 %d)\n", res.token.num);
