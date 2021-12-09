@@ -77,14 +77,14 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		fprintf(output, "sdiv i32 ");
 	else if (op.token == "LogicAnd" || op.token == "LogicOr") {
 		stringstream stream;
-		fprintf(output, "icmp ne i32 0 ");
+		fprintf(output, "icmp ne i32 0, ");
 		print_number_stack_elem(x1);
 		stream << register_num++;
 		x1.is_variable = true;
 		x1.variable = "%" + stream.str();
 
 		stringstream stream2;
-		fprintf(output, "\n%%%d = icmp ne i32 0 ", register_num);
+		fprintf(output, "\n%%%d = icmp ne i32 0, ", register_num);
 		print_number_stack_elem(x2);
 		stream2 << register_num++;
 		x2.is_variable = true;
