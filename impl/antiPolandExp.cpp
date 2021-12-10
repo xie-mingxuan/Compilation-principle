@@ -124,7 +124,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 			fprintf(output, "\nbr i1 %%%d, label %%COND_TRUE_%d, label %%COND_FALSE_%d\n", register_num++,
 					logic_code_block_num, logic_code_block_num);
 		} else if (op.token == "LogicOr") {
-			fprintf(output, "icmp i1 eq i1 0, ");
+			fprintf(output, "icmp eq i1 0, ");
 			print_number_stack_elem(x2);
 			fprintf(output, "\nbr i1 %%%d, label %%COND_FALSE_%d, label %%COND_FALSE_%d\n", register_num++,
 					logic_code_block_num, logic_code_block_num);
