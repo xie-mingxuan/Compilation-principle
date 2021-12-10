@@ -198,6 +198,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 
 	number_stack_elem res;
 	res.is_variable = true;
+	res.is_function = false;
 	stringstream stream;
 	stream << register_num++;
 	res.variable = "%" + stream.str();
@@ -271,6 +272,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 		if (word.type == "Number") {
 			number_stack_elem x;
 			x.is_variable = false;
+			x.is_function = false;
 			x.token = word;
 			number_stack.push(x);
 			last_word_is_operator = false;
@@ -347,6 +349,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				if (last_word_is_operator) {
 					number_stack_elem add_elem;
 					add_elem.is_variable = false;
+					add_elem.is_function = false;
 					add_elem.token.num = 0;
 					number_stack.push(add_elem);
 				}
@@ -376,6 +379,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 					if (!elem.is_global)
 						exit_();
 					number_stack_elem x;
+					x.is_function = false;
 					x.is_variable = false;
 					x.token.num = elem.global_variable_value;
 					number_stack.push(x);
@@ -432,6 +436,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 						fprintf(output, "%%%d = load i32, i32* %%%d\t; 加载数组元素的值\n", register_num, register_num - 1);
 						number_stack_elem x;
 						x.is_variable = true;
+						x.is_function = false;
 						stringstream stream;
 						stream << register_num++;
 						x.variable = "%" + stream.str();
@@ -439,6 +444,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 					} else {
 						number_stack_elem x;
 						x.is_variable = true;
+						x.is_function = false;
 						x.variable = get_register(word);
 						number_stack.push(x);
 					}
@@ -451,6 +457,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				fprintf(output, "%%%d = call i32 @getint()\n", register_num);
 				number_stack_elem x;
 				x.is_variable = true;
+				x.is_function = false;
 				stringstream stream;
 				stream << register_num++;
 				x.variable = "%" + stream.str();
@@ -472,6 +479,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				fprintf(output, "%%%d = call i32 @getch()\n", register_num);
 				number_stack_elem x;
 				x.is_variable = true;
+				x.is_function = false;
 				stringstream stream;
 				stream << register_num++;
 				x.variable = "%" + stream.str();
