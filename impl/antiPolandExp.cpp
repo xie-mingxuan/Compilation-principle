@@ -9,9 +9,8 @@ extern return_token word;
 extern FILE *input;
 extern FILE *output;
 extern int code_block_layer;
+extern int logic_code_block_num;
 int register_num = 1;
-
-void print_number_stack_elem(const number_stack_elem &);
 
 int priority(const return_token &c) {
 	if (c.token == "Plus" || c.token == "Minus")
@@ -42,6 +41,10 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		x1 = number_stack.top();
 		number_stack.pop();
 
+		if (x1.is_function) {
+			// TODO 添加函数相关内容
+		}
+
 		fprintf(output, "%%%d = icmp eq i32 ", register_num++);
 		print_number_stack_elem(x1);
 		fprintf(output, ", 0\n%%%d = zext i1 %%%d to i32\n", register_num, register_num - 1);
@@ -65,6 +68,9 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 	} else exit(-1);
 
 	fprintf(output, "%%%d = ", register_num);
+	if (x1.is_function) {
+		// TODO 添加函数内容
+	}
 	if (op.token == "Plus")
 		fprintf(output, "add i32 ");
 	else if (op.token == "Minus")
@@ -83,21 +89,66 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		x1.is_variable = true;
 		x1.variable = "%" + stream.str();
 
-		stringstream stream2;
-		fprintf(output, "\n%%%d = icmp ne i32 0, ", register_num);
-		print_number_stack_elem(x2);
-		stream2 << register_num++;
-		x2.is_variable = true;
-		x2.variable = "%" + stream2.str();
+		fprintf(output, "\nbr label %%JUDGE_LEFT_%d\n", logic_code_block_num);
+		fprintf(output, "\n\nJUDGE_LEFT_%d:\n", logic_code_block_num);
+		fprintf(output, "short_circuit_val_%d = alloca i32\n", logic_code_block_num);
+		fprintf(output, "%%%d = icmp ", register_num);
+		if (op.token == "LogicAnd") {
+			fprintf(output, "ne i1 0, ");
+			print_number_stack_elem(x1);
+			fprintf(output, "\nbr i1 %%%d, label %%COND_FALSE_%d, label %%JUDGE_RIGHT_%d\n", register_num++,
+					logic_code_block_num, logic_code_block_num);
+		} else if (op.token == "LogicOr") {
+			fprintf(output, "eq i1 0, ");
+			print_number_stack_elem(x1);
+			fprintf(output, "\nbr i1 %%%d, label %%COND_TRUE_%d, label %%JUDGE_RIGHT_%d\n", register_num++,
+					logic_code_block_num, logic_code_block_num);
+		}
+
+		fprintf(output, "\n\nJUDGE_RIGHT_%d:\n", logic_code_block_num);
+		if (x2.is_function) {
+			// TODO 添加函数内容
+		} else {
+			fprintf(output, "%%%d = icmp ne i32 0, ", register_num++);
+			print_number_stack_elem(x2);
+			stringstream stream2;
+			stream2 << register_num++;
+			x2.is_variable = true;
+			x2.variable = "%" + stream2.str();
+		}
 
 		fprintf(output, "\n%%%d = ", register_num);
-		if (op.token == "LogicAnd")
-			fprintf(output, "and i1 ");
-		else if (op.token == "LogicOr")
-			fprintf(output, "or i1 ");
-		else
-			exit_();
-		is_icmp_calc = true;
+		if (op.token == "LogicAnd") {
+			fprintf(output, "icmp ne i1 0, ");
+			print_number_stack_elem(x2);
+			fprintf(output, "\nbr i1 %%%d, label %%COND_TRUE_%d, label %%COND_FALSE_%d\n", register_num++,
+					logic_code_block_num, logic_code_block_num);
+		} else if (op.token == "LogicOr") {
+			fprintf(output, "icmp i1 eq i1 0, ");
+			print_number_stack_elem(x2);
+			fprintf(output, "\nbr i1 %%%d, label %%COND_FALSE_%d, label %%COND_FALSE_%d\n", register_num++,
+					logic_code_block_num, logic_code_block_num);
+		}
+
+		fprintf(output, "\n\nCOND_TRUE_%d:\n", logic_code_block_num);
+		fprintf(output, "%%%d = add i32 0, 1\n", register_num);
+		fprintf(output, "store i32 %%%d, i32* short_circuit_val_%d\n", register_num++, logic_code_block_num);
+		fprintf(output, "br label %%COND_FINAL_%d\n", logic_code_block_num);
+		fprintf(output, "\n\nCOND_FALSE_%d:\n", logic_code_block_num);
+		fprintf(output, "%%%d = add i32 0, 0\n", register_num);
+		fprintf(output, "store i32 %%%d, i32* short_circuit_val_%d\n", register_num++, logic_code_block_num);
+		fprintf(output, "br label %%COND_FINAL_%d\n", logic_code_block_num);
+
+		fprintf(output, "\n\nCOND_FINAL_%d:\n", logic_code_block_num);
+		fprintf(output, "%%%d = load i32, i32* short_circuit_val_%d\n", register_num, logic_code_block_num++);
+		number_stack_elem res;
+		stringstream stream2;
+		stream2 << register_num++;
+		res.is_variable = true;
+		res.is_function = false;
+		res.variable = "%" + stream2.str();
+		number_stack.push(res);
+		return;
 	} else {
 		if (op.token == "Eq")
 			fprintf(output, "icmp eq i32 ");
@@ -226,6 +277,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 			next_word_can_operator = true;
 		} else if (word.type == "Symbol") {
 			// 如果操作符是分号或逗号，则证明运算结束，按照逆波兰表达式的方式进行运算然后输出
+			// 后面加上了短路求值！
 			if (word.token == "Semicolon" || word.token == "Comma" || word.token == "]" || word.token == "RBrace") {
 				if (!is_global_define) {
 					while (!operator_stack.empty())

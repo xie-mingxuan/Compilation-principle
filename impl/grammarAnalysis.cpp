@@ -14,6 +14,7 @@ bool last_token_is_if_or_else = false;        // 标记上一个 token 是不是
 bool is_else_if = false;                    // 标记是否为 else if 语句
 int if_else_code_block_num = 1;                // 标记当前应该处理第几个 if else 代码块
 int while_code_block_num = 1;                // 标记当前应该处理第几个 while 代码块
+int logic_code_block_num = 1;                    // 标记当前应该处理第几个 and or 代码块
 bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句 stmt 语句则为真
 int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
 bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
@@ -600,8 +601,7 @@ void Stmt(FILE *file) {
 			number_stack_elem res = calcAntiPoland(file);
 			if (res.is_variable) {
 				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
-			}
-			else
+			} else
 				fprintf(output, "call void @putch(i32 %d)\n", res.token.num);
 
 			if (word.type != SYMBOL || word.token != "Semicolon")
@@ -975,7 +975,7 @@ void CompUnit(FILE *in, FILE *out) {
 }
 
 void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) {
-	number_stack_elem res = calcAntiPoland(file);
+	number_stack_elem res = calcAntiPoland(file); // TODO 修改为短路求值
 	fprintf(output, "%%%d = icmp ne i32 ", register_num++);
 	if (res.is_variable)
 		fprintf(output, "%s", res.variable.c_str());
