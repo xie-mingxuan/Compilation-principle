@@ -91,7 +91,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 
 		fprintf(output, "\nbr label %%JUDGE_LEFT_%d\n", logic_code_block_num);
 		fprintf(output, "\n\nJUDGE_LEFT_%d:\n", logic_code_block_num);
-		fprintf(output, "short_circuit_val_%d = alloca i32\n", logic_code_block_num);
+		fprintf(output, "%%short_circuit_val_%d = alloca i32\n", logic_code_block_num);
 		fprintf(output, "%%%d = icmp ", register_num);
 		if (op.token == "LogicAnd") {
 			fprintf(output, "ne i1 0, ");
@@ -132,15 +132,15 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 
 		fprintf(output, "\n\nCOND_TRUE_%d:\n", logic_code_block_num);
 		fprintf(output, "%%%d = add i32 0, 1\n", register_num);
-		fprintf(output, "store i32 %%%d, i32* short_circuit_val_%d\n", register_num++, logic_code_block_num);
+		fprintf(output, "store i32 %%%d, i32* %%short_circuit_val_%d\n", register_num++, logic_code_block_num);
 		fprintf(output, "br label %%COND_FINAL_%d\n", logic_code_block_num);
 		fprintf(output, "\n\nCOND_FALSE_%d:\n", logic_code_block_num);
 		fprintf(output, "%%%d = add i32 0, 0\n", register_num);
-		fprintf(output, "store i32 %%%d, i32* short_circuit_val_%d\n", register_num++, logic_code_block_num);
+		fprintf(output, "store i32 %%%d, i32* %%short_circuit_val_%d\n", register_num++, logic_code_block_num);
 		fprintf(output, "br label %%COND_FINAL_%d\n", logic_code_block_num);
 
 		fprintf(output, "\n\nCOND_FINAL_%d:\n", logic_code_block_num);
-		fprintf(output, "%%%d = load i32, i32* short_circuit_val_%d\n", register_num, logic_code_block_num++);
+		fprintf(output, "%%%d = load i32, i32* %%short_circuit_val_%d\n", register_num, logic_code_block_num++);
 		number_stack_elem res;
 		stringstream stream2;
 		stream2 << register_num++;
