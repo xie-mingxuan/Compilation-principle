@@ -96,7 +96,7 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		if (op.token == "LogicAnd") {
 			fprintf(output, "ne i1 0, ");
 			print_number_stack_elem(x1);
-			fprintf(output, "\nbr i1 %%%d, label %%COND_FALSE_%d, label %%JUDGE_RIGHT_%d\n", register_num++,
+			fprintf(output, "\nbr i1 %%%d, label %%JUDGE_RIGHT_%d, label %%COND_FALSE%d\n", register_num++,
 					logic_code_block_num, logic_code_block_num);
 		} else if (op.token == "LogicOr") {
 			fprintf(output, "eq i1 0, ");
@@ -131,11 +131,11 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		}
 
 		fprintf(output, "\n\nCOND_TRUE_%d:\n", logic_code_block_num);
-		fprintf(output, "%%%d = add i32 0, 1\n", register_num);
+		fprintf(output, "%%%d = add i32 0, 1\t; 条件为真，返回 1\n", register_num);
 		fprintf(output, "store i32 %%%d, i32* %%short_circuit_val_%d\n", register_num++, logic_code_block_num);
 		fprintf(output, "br label %%COND_FINAL_%d\n", logic_code_block_num);
 		fprintf(output, "\n\nCOND_FALSE_%d:\n", logic_code_block_num);
-		fprintf(output, "%%%d = add i32 0, 0\n", register_num);
+		fprintf(output, "%%%d = add i32 0, 0\t; 条件为假，返回 0\n", register_num);
 		fprintf(output, "store i32 %%%d, i32* %%short_circuit_val_%d\n", register_num++, logic_code_block_num);
 		fprintf(output, "br label %%COND_FINAL_%d\n", logic_code_block_num);
 
@@ -310,8 +310,11 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 
 				// 左括号则直接入栈
 			else if (word.token == "LPar") {
-				operator_stack.push(word);
-				next_word_can_operator = true;
+//				operator_stack.push(word);
+//				next_word_can_operator = true;
+				word = get_symbol(input);
+				number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
+				number_stack.push(res);
 			}
 				// 右括号则运算到前面的一个左括号，然后设置标志位为 true
 			else if (word.token == "RPar") {
