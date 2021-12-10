@@ -19,6 +19,11 @@
 #define WHILE_COND 4
 #define WHILE_LOOP 5
 #define WHILE_FINAL 6
+#define JUDGE_LEFT_VAL 7
+#define JUDGE_COND_VAL 8
+#define JUDGE_FINAL 9
+#define LOGIC_AND 10
+#define LOGIC_OR 11
 
 using namespace std;
 
@@ -29,7 +34,7 @@ typedef struct {
 	bool is_array = false;            // 标记是否为 数组；默认为 false
 	string saved_pointer;            // 记录当前变量的指针地址
 	string saved_register;            // 记录当前变量的数值存储地址
-	string variable_type;			// 记录变量的数据类型
+	string variable_type;            // 记录变量的数据类型
 	int code_block_layer;            // 记录当前变量的作用域
 	int global_variable_value;        // 如果是全局变量，记录该变量的值
 	int dimension = 0;                // 如果是数组，记录数组的维度，默认值为 0

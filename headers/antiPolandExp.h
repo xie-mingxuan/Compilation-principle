@@ -15,6 +15,7 @@ using namespace std;
 #define C_ANTIPOLANDEXP_H
 
 typedef struct {
+	bool is_function;
 	bool is_variable;
 	return_token token;
 	string variable;
@@ -25,4 +26,5 @@ typedef struct {
  */
 number_stack_elem calcAntiPoland(FILE *input, bool is_const_define = false, bool is_global_define = false);
 
+void print_number_stack_elem(const number_stack_elem &x);
 #endif //C_ANTIPOLANDEXP_H
