@@ -290,11 +290,11 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 							register_num++, logic_and_block_num, logic_and_block_num);
 					fprintf(output, "\n\nLOGIC_AND_TRUE_%d:\n", logic_and_block_num);
 					fprintf(output, "store i32 1, i32* %%logic_and_val_%d\n", logic_and_block_num);
-					fprintf(output, "br %%label %%LOGIC_AND_FINAL_%d\n", logic_and_block_num);
+					fprintf(output, "br label %%LOGIC_AND_FINAL_%d\n", logic_and_block_num);
 
 					fprintf(output, "\n\nLOGIC_AND_FALSE_%d:\n", logic_and_block_num);
 					fprintf(output, "store i32 0, i32* %%logic_and_val_%d\n", logic_and_block_num);
-					fprintf(output, "br %%label %%LOGIC_AND_FINAL_%d\n", logic_and_block_num);
+					fprintf(output, "br label %%LOGIC_AND_FINAL_%d\n", logic_and_block_num);
 
 					fprintf(output, "\n\nLOGIC_AND_FINAL_%d:\n", logic_and_block_num);
 					fprintf(output, "%%%d = load i32, i32* %%logic_and_val_%d\n", register_num, logic_and_block_num);
