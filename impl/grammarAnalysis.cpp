@@ -1015,11 +1015,11 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 				register_num++, logic_or_code_num, logic_or_code_num);
 		fprintf(output, "\n\nLOGIC_OR_TRUE_%d:\n", logic_or_code_num);
 		fprintf(output, "store i32 1, i32* %%logic_or_val_%d\n", logic_or_code_num);
-		fprintf(output, "br label LOGIC_OR_FINAL_%d\n", logic_or_code_num);
+		fprintf(output, "br %%label LOGIC_OR_FINAL_%d\n", logic_or_code_num);
 
 		fprintf(output, "\n\nLOGIC_OR_FALSE_%d:\n", logic_or_code_num);
 		fprintf(output, "store i32 0, i32* %%logic_or_val_%d\n", logic_or_code_num);
-		fprintf(output, "br label LOGIC_or_FINAL_%d\n", logic_or_code_num);
+		fprintf(output, "br %%label LOGIC_or_FINAL_%d\n", logic_or_code_num);
 
 		fprintf(output, "\n\nLOGIC_OR_FINAL_%d:\n", logic_or_code_num);
 		fprintf(output, "%%%d = load i32, i32* %%logic_or_val_%d\n", register_num, logic_or_code_num);
