@@ -362,6 +362,9 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				word = get_symbol(input);
 				number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
 				number_stack.push(res);
+				last_word_is_operator = false;
+				word = get_symbol(input);
+				continue;
 			}
 				// 右括号则运算到前面的一个左括号，然后设置标志位为 true
 			else if (word.token == "RPar") {
