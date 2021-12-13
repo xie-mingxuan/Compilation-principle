@@ -14,6 +14,8 @@ bool last_token_is_if_or_else = false;        // 标记上一个 token 是不是
 bool is_else_if = false;                    // 标记是否为 else if 语句
 int if_else_code_block_num = 1;                // 标记当前应该处理第几个 if else 代码块
 int while_code_block_num = 1;                // 标记当前应该处理第几个 while 代码块
+int logic_or_code_block_num = 1;                // 标记当前应该处理第几个 逻辑或 代码块
+int logic_and_code_block_num = 1;                // 标记当前应该处理第几个 逻辑与 代码块
 bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句 stmt 语句则为真
 int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
 bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
@@ -600,8 +602,7 @@ void Stmt(FILE *file) {
 			number_stack_elem res = calcAntiPoland(file);
 			if (res.is_variable) {
 				fprintf(output, "call void @putch(i32 %s)\n", res.variable.c_str());
-			}
-			else
+			} else
 				fprintf(output, "call void @putch(i32 %d)\n", res.token.num);
 
 			if (word.type != SYMBOL || word.token != "Semicolon")
@@ -976,6 +977,59 @@ void CompUnit(FILE *in, FILE *out) {
 
 void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) {
 	number_stack_elem res = calcAntiPoland(file);
+	bool have_logic_or = false;
+	int logic_or_code_num = logic_or_code_block_num;
+	int logic_or_num = 1;
+	while (word.type == SYMBOL && word.token == "LogicOr") {
+		if (!have_logic_or) {
+			logic_or_code_block_num++;
+			fprintf(output, "%%logic_or_val_%d = alloca i32\n", logic_or_code_num);
+			fprintf(output, "br label %%LOGIC_OR_JUDGE_%d_%d\n", logic_or_code_num, logic_or_num);
+			fprintf(output, "\n\nLOGIC_OR_JUDGE_%d_%d:\t; 第 %d 个 逻辑或 的 第 %d 个判断\n", logic_or_code_num, logic_or_num,
+					logic_or_code_num, logic_or_num);
+			have_logic_or = true;
+		}
+		logic_or_num++;
+		if (res.is_function) {
+			// TODO do sth to deal func
+		}
+
+		fprintf(output, "%%%d = icmp ne i32 0, ", register_num);
+		word = get_symbol(input);
+		print_number_stack_elem(res);
+		fprintf(output, "\nbr i1 %%%d, label %%LOGIC_OR_TRUE_%d, label %%LOGIC_OR_JUDGE_%d_%d\n", register_num++,
+				logic_or_code_num, logic_or_code_num, logic_or_num);
+		fprintf(output, "\n\nLOGIC_OR_JUDGE_%d_%d:\t; 第 %d 个 逻辑或 的 第 %d 个判断\n", logic_or_code_num, logic_or_num,
+				logic_or_code_num, logic_or_num);
+		res = calcAntiPoland(file);
+	}
+
+	if (have_logic_or) {
+		if (res.is_function) {
+			// TODO do sth to deal func
+		}
+
+		fprintf(output, "%%%d = icmp ne i32 0, ", register_num);
+		print_number_stack_elem(res);
+		fprintf(output, "\nbr i1 %%%d, label %%LOGIC_OR_TRUE_%d, label %%LOGIC_OR_FALSE_%d\n",
+				register_num++, logic_or_code_num, logic_or_code_num);
+		fprintf(output, "\n\nLOGIC_OR_TRUE_%d:\n", logic_or_code_num);
+		fprintf(output, "store i32 1, i32* %%logic_or_val_%d\n", logic_or_code_num);
+		fprintf(output, "br label %%LOGIC_OR_FINAL_%d\n", logic_or_code_num);
+
+		fprintf(output, "\n\nLOGIC_OR_FALSE_%d:\n", logic_or_code_num);
+		fprintf(output, "store i32 0, i32* %%logic_or_val_%d\n", logic_or_code_num);
+		fprintf(output, "br label %%LOGIC_OR_FINAL_%d\n", logic_or_code_num);
+
+		fprintf(output, "\n\nLOGIC_OR_FINAL_%d:\n", logic_or_code_num);
+		fprintf(output, "%%%d = load i32, i32* %%logic_or_val_%d\n", register_num, logic_or_code_num);
+		stringstream stream;
+		stream << register_num++;
+		res.is_variable = true;
+		res.is_function = false;
+		res.variable = "%" + stream.str();
+	}
+
 	fprintf(output, "%%%d = icmp ne i32 ", register_num++);
 	if (res.is_variable)
 		fprintf(output, "%s", res.variable.c_str());

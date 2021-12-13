@@ -9,9 +9,10 @@ extern return_token word;
 extern FILE *input;
 extern FILE *output;
 extern int code_block_layer;
+extern int while_code_block_num;
+extern int logic_and_code_block_num;
+extern int logic_or_code_block_num;
 int register_num = 1;
-
-void print_number_stack_elem(const number_stack_elem &);
 
 int priority(const return_token &c) {
 	if (c.token == "Plus" || c.token == "Minus")
@@ -42,6 +43,10 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		x1 = number_stack.top();
 		number_stack.pop();
 
+		if (x1.is_function) {
+			// TODO do sth to call func
+		}
+
 		fprintf(output, "%%%d = icmp eq i32 ", register_num++);
 		print_number_stack_elem(x1);
 		fprintf(output, ", 0\n%%%d = zext i1 %%%d to i32\n", register_num, register_num - 1);
@@ -64,6 +69,10 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		number_stack.pop();
 	} else exit(-1);
 
+	if (x1.is_function) {
+		// TODO do sth to call func
+	}
+
 	fprintf(output, "%%%d = ", register_num);
 	if (op.token == "Plus")
 		fprintf(output, "add i32 ");
@@ -75,30 +84,61 @@ void pop_and_print(stack<number_stack_elem> &number_stack, stack<return_token> &
 		fprintf(output, "sdiv i32 ");
 	else if (op.token == "Mod")
 		fprintf(output, "sdiv i32 ");
-	else if (op.token == "LogicAnd" || op.token == "LogicOr") {
-		stringstream stream;
-		fprintf(output, "icmp ne i32 0, ");
-		print_number_stack_elem(x1);
-		stream << register_num++;
-		x1.is_variable = true;
-		x1.variable = "%" + stream.str();
-
-		stringstream stream2;
-		fprintf(output, "\n%%%d = icmp ne i32 0, ", register_num);
-		print_number_stack_elem(x2);
-		stream2 << register_num++;
-		x2.is_variable = true;
-		x2.variable = "%" + stream2.str();
-
-		fprintf(output, "\n%%%d = ", register_num);
-		if (op.token == "LogicAnd")
-			fprintf(output, "and i1 ");
-		else if (op.token == "LogicOr")
-			fprintf(output, "or i1 ");
-		else
-			exit_();
-		is_icmp_calc = true;
-	} else {
+//	else if (op.token == "LogicAnd") {
+//		stringstream stream;
+//		fprintf(output, "icmp ne i32 0, ");
+//		print_number_stack_elem(x1);
+//		stream << register_num++;
+//		x1.is_variable = true;
+//		x1.variable = "%" + stream.str();
+//
+//		// 添加 逻辑与 短路求值代码
+//		fprintf(output, "\nbr label %%LOGIC_AND_JUDGE_LEFT_%d\n", logic_and_code_block_num);
+//		fprintf(output, "%%logic_and_val_%d = alloca i32\n", logic_and_code_block_num);
+//		fprintf(output, "\n\nLOGIC_AND_JUDGE_LEFT_%d:\t; 第 %d 个 逻辑与 的左值判断\n", logic_and_code_block_num,
+//				logic_and_code_block_num);
+//		fprintf(output, "%%%d = icmp ne i1 0, %s\n", register_num, x1.variable.c_str());
+//		fprintf(output, "br i1 %%%d, label %%LOGIC_AND_JUDGE_RIGHT_%d, label %%LOGIC_AND_FALSE_%d\n", register_num++,
+//				logic_and_code_block_num, logic_and_code_block_num);
+//
+//
+//		fprintf(output, "\n\nLOGIC_AND_JUDGE_RIGHT_%d:\t; 第 %d 个 逻辑与 的右值判断\n", logic_and_code_block_num,
+//				logic_and_code_block_num);
+//		stringstream stream2;
+//		if (x2.is_function) {
+//			// TODO do sth to call func
+//		}
+//		fprintf(output, "\n%%%d = icmp ne i32 0, ", register_num);
+//		print_number_stack_elem(x2);
+//		stream2 << register_num++;
+//		x2.is_variable = true;
+//		x2.variable = "%" + stream2.str();
+//		fprintf(output, "%%%d = icmp ne i1 0, %s\n", register_num, x2.variable.c_str());
+//		fprintf(output, "br i1 %%%d, label %%LOGIC_AND_TRUE_%d, label %%LOGIC_AND_FALSE_%d\n", register_num++,
+//				logic_and_code_block_num, logic_and_code_block_num);
+//
+//		fprintf(output, "\n\n%%LOGIC_AND_TRUE_%d:\n", logic_and_code_block_num);
+//		fprintf(output, "%%%d = add i32 0, 1\n", register_num);
+//		fprintf(output, "store i32 %%%d, i32* %%logic_and_val_%d", register_num++, logic_and_code_block_num);
+//		fprintf(output, "br label %%LOGIC_AND_FINAL_%d:\n", logic_and_code_block_num);
+//
+//		fprintf(output, "\n\n%%LOGIC_AND_FALSE_%d:\n", logic_and_code_block_num);
+//		fprintf(output, "%%%d = add i32 0, 0\n", register_num);
+//		fprintf(output, "store i32 %%%d, i32* %%logic_and_val_%d", register_num++, logic_and_code_block_num);
+//		fprintf(output, "br label %%LOGIC_AND_FINAL_%d:\n", logic_and_code_block_num);
+//
+//		fprintf(output, "\n\n%%LOGIC_AND_FINAL_%d:\n", logic_and_code_block_num++);
+//		fprintf(output, "%%%d = load i32, i32* %%logic_and_val_%d\n", register_num, register_num - 1);
+//		number_stack_elem res;
+//		res.is_variable = true;
+//		res.is_function = false;
+//		stringstream stream1;
+//		stream1 << register_num++;
+//		res.variable = "%" + stream1.str();
+//		number_stack.push(res);
+//		return;
+//	}
+	else {
 		if (op.token == "Eq")
 			fprintf(output, "icmp eq i32 ");
 		else if (op.token == "NotEq")
@@ -213,6 +253,9 @@ void pop_and_not_print(stack<number_stack_elem> &number_stack, stack<return_toke
 number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_global_define) {
 	bool last_word_is_operator = true;
 	bool next_word_can_operator = true;
+	bool have_logic_and = false;                             // 标记当前语句串是否有 &&
+	int logic_and_block_num = logic_and_code_block_num;      // 标记当前是第几个 && 语句
+	int logic_and_num = 1;                                   // 标记在当前 && 语句中的第几块
 	stack<number_stack_elem> number_stack;
 	stack<return_token> operator_stack;
 	while (true) {
@@ -226,7 +269,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 			next_word_can_operator = true;
 		} else if (word.type == "Symbol") {
 			// 如果操作符是分号或逗号，则证明运算结束，按照逆波兰表达式的方式进行运算然后输出
-			if (word.token == "Semicolon" || word.token == "Comma" || word.token == "]" || word.token == "RBrace") {
+			if (word.token == "Semicolon" || word.token == "Comma" || word.token == "]" || word.token == "RBrace" ||
+				word.token == "LogicOr" || word.token == "RPar") {
 				if (!is_global_define) {
 					while (!operator_stack.empty())
 						pop_and_print(number_stack, operator_stack);
@@ -234,17 +278,72 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 					while (!operator_stack.empty())
 						pop_and_not_print(number_stack, operator_stack);
 				}
+				if (have_logic_and) {
+					number_stack_elem elem = number_stack.top();
+					number_stack.pop();
+					if (elem.is_function) {
+						// TODO sth to deal with the func
+					}
+					fprintf(output, "%%%d = icmp ne i32 0, ", register_num);
+					print_number_stack_elem(elem);
+					fprintf(output, "\nbr i1 %%%d, label %%LOGIC_AND_TRUE_%d, label %%LOGIC_AND_FALSE_%d\n",
+							register_num++, logic_and_block_num, logic_and_block_num);
+					fprintf(output, "\n\nLOGIC_AND_TRUE_%d:\n", logic_and_block_num);
+					fprintf(output, "store i32 1, i32* %%logic_and_val_%d\n", logic_and_block_num);
+					fprintf(output, "br label %%LOGIC_AND_FINAL_%d\n", logic_and_block_num);
+
+					fprintf(output, "\n\nLOGIC_AND_FALSE_%d:\n", logic_and_block_num);
+					fprintf(output, "store i32 0, i32* %%logic_and_val_%d\n", logic_and_block_num);
+					fprintf(output, "br label %%LOGIC_AND_FINAL_%d\n", logic_and_block_num);
+
+					fprintf(output, "\n\nLOGIC_AND_FINAL_%d:\n", logic_and_block_num);
+					fprintf(output, "%%%d = load i32, i32* %%logic_and_val_%d\n", register_num, logic_and_block_num);
+					stringstream stream;
+					stream << register_num++;
+					elem.is_variable = true;
+					elem.is_function = false;
+					elem.variable = "%" + stream.str();
+					number_stack.push(elem);
+				}
 				break;
 			}
 
 			// 如果操作符是逻辑运算符号，则计算符号之前的表达式，然后将逻辑运算符入栈
 			if (is_cond_symbol(word)) {
-				if (!is_global_define) {
-					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
-						pop_and_print(number_stack, operator_stack);
-				} else {
+				if (is_global_define) {
 					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
 						pop_and_not_print(number_stack, operator_stack);
+				} else {
+					while (!operator_stack.empty() && priority(operator_stack.top()) <= priority(word))
+						pop_and_print(number_stack, operator_stack);
+					// 添加 逻辑与 运算
+					if (word.token == "LogicAnd") {
+						number_stack_elem elem = number_stack.top();
+						number_stack.pop();
+						if (!have_logic_and) {
+							logic_and_code_block_num++;
+							fprintf(output, "%%logic_and_val_%d = alloca i32\n", logic_and_block_num);
+							fprintf(output, "br label %%LOGIC_AND_JUDGE_%d_%d\n", logic_and_block_num, logic_and_num);
+							have_logic_and = true;
+							fprintf(output, "\n\nLOGIC_AND_JUDGE_%d_%d:\t; 第 %d 个 逻辑与 的 第 %d 个判断\n",
+									logic_and_block_num,
+									logic_and_num, logic_and_block_num, logic_and_num);
+						}
+						logic_and_num++;
+						if (elem.is_function) {
+							// TODO deal with func
+						}
+						fprintf(output, "%%%d = icmp ne i32 0, ", register_num);
+						print_number_stack_elem(elem);
+						fprintf(output, "\nbr i1 %%%d, label %%LOGIC_AND_JUDGE_%d_%d, label %%LOGIC_AND_FALSE_%d\n",
+								register_num++, logic_and_block_num, logic_and_num, logic_and_block_num);
+						fprintf(output, "\n\nLOGIC_AND_JUDGE_%d_%d:\t; 第 %d 个 逻辑与 的 第 %d 个判断\n", logic_and_block_num,
+								logic_and_num, logic_and_block_num, logic_and_num);
+						word = get_symbol(input);
+						next_word_can_operator = true;
+						last_word_is_operator = true;
+						continue;
+					}
 				}
 				operator_stack.push(word);
 				next_word_can_operator = true;
@@ -258,8 +357,14 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 
 				// 左括号则直接入栈
 			else if (word.token == "LPar") {
-				operator_stack.push(word);
-				next_word_can_operator = true;
+//				operator_stack.push(word);
+//				next_word_can_operator = true;
+				word = get_symbol(input);
+				number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
+				number_stack.push(res);
+				last_word_is_operator = false;
+				word = get_symbol(input);
+				continue;
 			}
 				// 右括号则运算到前面的一个左括号，然后设置标志位为 true
 			else if (word.token == "RPar") {
