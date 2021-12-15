@@ -1495,6 +1495,7 @@ void reload_param() {
 			variable.saved_pointer = "%" + stream.str();
 			fprintf(output, "%%%d = load %s, %s* %s\n", register_num++, variable.variable_type.c_str(),
 					variable.variable_type.c_str(), variable.saved_pointer.c_str());
+			variable.variable_type = "i32";
 		}
 	}
 }
