@@ -442,6 +442,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 
 					// lab 7 要求对数组元素进行计算
 					variable_list_elem elem = get_variable(word);
+					// 处理数组元素
 					if (elem.is_array) {
 						number_stack_elem array_dimension_value[10];
 						int offset = register_num;
@@ -449,7 +450,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 						for (int i = 1; i <= elem.dimension; i++) {
 							word = get_symbol(input);
 							if (word.type != SYMBOL || word.token != "[")
-								exit_();
+								break;
 							word = get_symbol(input);
 							array_dimension_value[i] = calcAntiPoland(file, is_const_define, is_global_define);
 							if (word.type != SYMBOL || word.token != "]")
@@ -486,7 +487,40 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 						stream << register_num++;
 						x.variable = "%" + stream.str();
 						number_stack.push(x);
-					} else {
+						if(word.token == "RPar")
+							continue;
+					}
+						// 处理函数
+					else if (elem.is_function) {
+						number_stack_elem params[10];
+						word = get_symbol(input);
+						if (word.type != SYMBOL || word.token != "LPar")
+							exit_();
+						for (int i = 1; i <= elem.function_param_num; i++) {
+							word = get_symbol(input);
+							params[i] = calcAntiPoland(input);
+						}
+						if (word.type != SYMBOL || word.token != "RPar")
+							exit_();
+						assert(elem.function_return_type == INT);
+						fprintf(output, "%%%d = call i32 @%s (", register_num, elem.token.token.c_str());
+						for (int i = 1; i <= elem.function_param_num; i++) {
+							fprintf(output, "%s ", elem.function_param_type[i].c_str());
+							print_number_stack_elem(params[i]);
+							fprintf(output, ", ");
+						}
+						fseek(output, -2, SEEK_CUR);
+						fprintf(output, ")\n");
+						number_stack_elem res;
+						stringstream stream;
+						stream << register_num++;
+						res.is_variable = true;
+						res.is_function = false;
+						res.variable = "%" + stream.str();
+						number_stack.push(res);
+					}
+						// 处理变量
+					else {
 						number_stack_elem x;
 						x.is_variable = true;
 						x.variable = get_register(word);
@@ -573,6 +607,56 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 					exit(-1);
 
 				word = get_symbol(file);
+			}
+				// 也可能调用了 getarray() 函数
+			else if (word.token == "getarray") {
+				word = get_symbol(input);
+				if (word.type != SYMBOL || word.token != "LPar")
+					exit_();
+				word = get_symbol(input);
+				if (!is_variable_list_contains_in_all_layer(word)) {
+					fprintf(output, "%s has never been defined!\n", word.token.c_str());
+					exit_();
+				}
+				variable_list_elem array = get_variable(word);
+				if (!array.is_array)
+					exit_();
+
+				int offset_register = register_num;
+				fprintf(output, "%%%d = add i32 0, 0\n", register_num++);
+				for (int i = 1; i <= array.dimension; i++) {
+					word = get_symbol(input);
+					if (word.type != SYMBOL || word.token != "[")
+						break;
+					word = get_symbol(input);
+					number_stack_elem param = calcAntiPoland(input);
+					if (word.type != SYMBOL || word.token != "]")
+						exit_();
+
+					int layer_number = 1;
+					for (int j = i + 1; j <= array.dimension; j++)
+						layer_number *= array.dimension_num[j];
+					fprintf(output, "%%%d = mul i32 %d, ", register_num++, layer_number);
+					print_number_stack_elem(param);
+					fprintf(output, "\n");
+
+					fprintf(output, "%%%d = add i32 %%%d, %%%d\n", register_num, register_num - 1, offset_register);
+					offset_register = register_num++;
+				}
+				if (word.type != SYMBOL || word.token != "RPar")
+					exit_();
+
+				fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+						array.variable_type.c_str(), array.variable_type.c_str(), array.saved_pointer.c_str(),
+						offset_register);
+				fprintf(output, "%%%d = call i32 @getarray(i32* %%%d)\n", register_num, register_num - 1);
+				number_stack_elem res;
+				res.is_variable = true;
+				res.is_function = false;
+				stringstream stream;
+				stream << register_num++;
+				res.variable = "%" + stream.str();
+				number_stack.push(res);
 			} else {
 				printf("%s has never been defined!\n", word.token.c_str());
 				exit(-1);

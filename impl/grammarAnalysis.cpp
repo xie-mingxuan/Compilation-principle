@@ -30,25 +30,98 @@ void exit_() {
 	exit(-1);
 }
 
-void FuncDef(FILE *file, bool is_main_func) {
-	if (!is_main_func) {
-		// 修改为主函数不需要判断函数类型了
-		FuncType(file);
+void FuncDef(FILE *file, bool is_main_func, int function_type, const string &function_name) {
+	if (function_type == VOID) {
+		fprintf(output, "define void ");
 	} else {
 		fprintf(output, "define i32 ");
 	}
-	Ident(file);
+//	Ident(file);
+	variable_list_elem function_elem;
+	if (is_main_func) {
+		fprintf(output, "@main");
+		word = get_symbol(input);
+	} else {
+		function_elem.code_block_layer = 0;
+		function_elem.token.type = "Ident";
+		function_elem.token.token = function_name;
+		function_elem.saved_pointer = "@" + function_name;
+		function_elem.is_function = true;
+		function_elem.is_array = false;
+		function_elem.function_return_type = function_type;
+		fprintf(output, "@%s", function_name.c_str());
+		register_num = 0;
+	}
 	if (word.type != SYMBOL || word.token != "LPar")
 		exit_();
 	word = get_symbol(file);
 	fprintf(output, "(");
 
-	if (word.type != SYMBOL || word.token != "RPar")
-		exit_();
+	int func_param_number = 0;
+	while (word.type != SYMBOL || word.token != "RPar") {
+		if (word.type != IDENT || word.token != "int")
+			exit_();
+		word = get_symbol(input);
+		variable_list_elem elem;
+		elem.token = word;
+		stringstream stream;
+		stream << register_num++;
+		elem.saved_register = "%" + stream.str();
+		elem.code_block_layer = 1;
+
+		word = get_symbol(input);
+		if (word.type == SYMBOL && (word.token == "Comma" || word.token == "RPar")) {
+			elem.variable_type = "i32";
+			function_elem.function_param_type[++func_param_number] = "i32";
+			fprintf(output, "%s %%%d, ", elem.variable_type.c_str(), register_num - 1);
+			variable_list.push_back(elem);
+			if (word.token == "RPar")
+				break;
+			word = get_symbol(input);
+			continue;
+		} else {
+			if (word.type != SYMBOL || word.token != "[")
+				exit_();
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "]")
+				exit_();
+			elem.dimension++;
+			word = get_symbol(input);
+			// 二维数组
+			if (word.type == SYMBOL && word.token == "[") {
+				word = get_symbol(input);
+				elem.dimension++;
+				elem.dimension_num[2] = word.num;
+				word = get_symbol(input);
+				if (word.type != SYMBOL || word.token != "]")
+					exit_();
+				word = get_symbol(input);
+			}
+			// 数组指针（无论一维还是二维）都是 i32 * 类型
+			elem.variable_type = "i32*";
+			elem.function_param_type[func_param_number++] = "i32*";
+			elem.is_array = true;
+			variable_list.push_back(elem);
+		}
+		fprintf(output, "%s %%%d, ", elem.variable_type.c_str(), register_num - 1);
+
+		if (word.type == SYMBOL && word.token == "Comma")
+			word = get_symbol(input);
+	}
+	function_elem.function_param_num = func_param_number;
+
+	if (!is_main_func) {
+		variable_list.push_back(function_elem);
+		fseek(output, -2, SEEK_CUR);
+	}
 	word = get_symbol(file);
 	fprintf(output, ")");
+	if (!is_main_func)
+		register_num++;
 
-	Block(file);
+	Block(file, function_type, true);
+
+	register_num = 1;
 
 	word = get_symbol(file);
 }
@@ -71,29 +144,37 @@ void Ident(FILE *file) {
 	word = get_symbol(file);
 }
 
-void Block(FILE *file) {
+void Block(FILE *file, int function_type, bool is_function_define) {
 	if (word.type != SYMBOL || word.token != "LBrace")
 		exit_();
 	code_block_layer++;
 	word = get_symbol(file);
 	fprintf(output, "{\n");
-	print_variable_table();
+	if (!is_function_define)
+		print_variable_table();
+	else
+		reload_param();
 
 	while (word.type != SYMBOL || word.token != "RBrace") {
-		BlockItem(file);
+		BlockItem(file, function_type);
 	}
 	update_variable_list();
 	code_block_layer--;
+	update_variable_list();
 
-	word = get_symbol(file);
-	fprintf(output, "}\n");
+	//word = get_symbol(file);
+
+	if (function_type == VOID)
+		fprintf(output, "ret void\n");
+
+	fprintf(output, "}\n\n");
 }
 
-void BlockItem(FILE *file) {
+void BlockItem(FILE *file, int function_type) {
 	if (word.type == IDENT && (word.token == "const" || word.token == "int"))
 		Decl(file);
 	else
-		Stmt(file);
+		Stmt(file, function_type);
 }
 
 void Decl(FILE *file) {
@@ -324,7 +405,7 @@ number_stack_elem Exp(FILE *file) {
 	return calcAntiPoland(file);
 }
 
-void Stmt(FILE *file) {
+void Stmt(FILE *file, int function_type) {
 	if (word.type == IDENT) {
 		// 返回语句
 		if (word.token == "Return") {
@@ -334,12 +415,15 @@ void Stmt(FILE *file) {
 				can_deal_stmt_left--;
 			}
 			word = get_symbol(file);
-			number_stack_elem res = calcAntiPoland(file);
-			if (res.is_variable)
-				fprintf(output, "ret i32 %s\n", res.variable.c_str());
-			else fprintf(output, "ret i32 %d\n", res.token.num);
+			if (function_type == INT) {
+				number_stack_elem res = calcAntiPoland(file);
+				if (res.is_variable)
+					fprintf(output, "ret i32 %s\n", res.variable.c_str());
+				else fprintf(output, "ret i32 %d\n", res.token.num);
+			} else {
+				fprintf(output, "ret void\n");
+			}
 			need_br = false;
-
 			if (word.type != SYMBOL || word.token != "Semicolon")
 				exit_();
 			word = get_symbol(file);
@@ -512,7 +596,7 @@ void Stmt(FILE *file) {
 				exit_();
 			fprintf(output, "br label %%WHILE_COND_%d\n", while_code_block_num);
 			fprintf(output, "\n\n\nWHILE_COND_%d:\t; while 循环的判断条件\n", while_code_block_num);
-			print_variable_table(); // TODO 可以删掉
+			print_variable_table();
 			word = get_symbol(input);
 			Cond(input, false, true);
 			if (word.type != SYMBOL || word.token != "RPar")
@@ -536,12 +620,12 @@ void Stmt(FILE *file) {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 			fprintf(output, "\n\n\nWHILE_LOOP_%d:\t; while 循环的循环体\n", elem.register_num);
-			print_variable_table(); // TODO can be deleted
+			print_variable_table();
 			word = get_symbol(input);
 			while (word.type != SYMBOL || word.token != "RBrace")
 				BlockItem(input);
 			code_block_layer--;
-			update_variable_list(); // TODO
+			update_variable_list();
 			if (need_br)
 				fprintf(output, "br label %%WHILE_COND_%d\n", elem.register_num);
 			else need_br = true;
@@ -634,6 +718,115 @@ void Stmt(FILE *file) {
 			word = get_symbol(file);
 			return;
 		}
+			// putarray 语句
+		else if (word.token == "putarray") {
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "LPar")
+				exit_();
+			word = get_symbol(input);
+
+			number_stack_elem para1 = calcAntiPoland(input);
+			if (word.type != SYMBOL && word.token != "Comma")
+				exit_();
+
+			word = get_symbol(input);
+			if (word.type != IDENT)
+				exit_();
+			variable_list_elem para2 = get_variable(word);
+			if (!para2.is_array)
+				exit_();
+
+			fprintf(output, "%%%d = add i32 0, 0\t\t\t; 定义临时变量偏移量 0，用来计算数组元素的位置\n", register_num);
+			int offset_register = register_num++;
+			for (int i = 1; i < para2.dimension; i++) {
+				word = get_symbol(input);
+				if (word.type != SYMBOL || word.token != "[")
+					exit_();
+				word = get_symbol(input);
+
+				int dimension_number = 1;
+				for (int j = i + 1; j <= para2.dimension; j++) {
+					dimension_number *= para2.dimension_num[j];
+				}
+
+				number_stack_elem res = calcAntiPoland(input);
+				if (res.is_variable)
+					fprintf(output, "%%%d = mul i32 %d, %s\n", register_num, dimension_number, res.variable.c_str());
+				else
+					fprintf(output, "%%%d = mul i32 %d, %d\n", register_num, dimension_number, res.token.num);
+				fprintf(output, "%%%d = add i32 %%%d, %%%d\n", register_num + 1, offset_register, register_num);
+				register_num++;
+				offset_register = register_num++;
+
+				if (word.type != SYMBOL || word.token != "]")
+					exit_();
+			}
+
+			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+					para2.variable_type.c_str(), para2.variable_type.c_str(), para2.saved_pointer.c_str(),
+					offset_register);
+			fprintf(output, "call void @putarray(i32 ");
+			print_number_stack_elem(para1);
+			fprintf(output, ", i32* %%%d)\n", register_num - 1);
+
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "RPar")
+				exit_();
+
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "Semicolon")
+				exit_();
+			word = get_symbol(input);
+			return;
+		}
+			// getarray 语句
+		else if (word.token == "getarray") {
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "LPar")
+				exit_();
+			word = get_symbol(input);
+			if (!is_variable_list_contains_in_all_layer(word))
+				exit_();
+
+			variable_list_elem array = get_variable(word);
+			if (!array.is_array)
+				exit_();
+
+			int offset_register = register_num;
+			fprintf(output, "%%%d = add i32 0, 0\n", register_num++);
+			for (int i = 1; i <= array.dimension; i++) {
+				word = get_symbol(input);
+				if (word.type != SYMBOL || word.token != "[")
+					break;
+				word = get_symbol(input);
+				number_stack_elem param = calcAntiPoland(input);
+				if (word.type != SYMBOL || word.token != "]")
+					exit_();
+
+				int dimension_num = 1;
+				for (int j = i + 1; j <= array.dimension; j++)
+					dimension_num *= array.dimension_num[j];
+
+				fprintf(output, "%%%d = mul i32 %d, ", register_num++, dimension_num);
+				print_number_stack_elem(param);
+				fprintf(output, ")\n");
+				fprintf(output, "%%%d = add i32 %%%d, %%%d\n", register_num, offset_register, register_num - 1);
+				register_num++;
+			}
+
+			fprintf(output, "%%%d = getelementptr %s, %s*, %s, i32 0, i32 %%%d\n", register_num++,
+					array.variable_type.c_str(), array.variable_type.c_str(), array.saved_pointer.c_str(),
+					offset_register);
+			fprintf(output, "%%%d = call i32 @getarray(i32* %%%d)\n", register_num, register_num - 1);
+			register_num++;
+
+			if (word.type != SYMBOL || word.token != "RPar")
+				exit_();
+			word = get_symbol(input);
+			if (word.type != SYMBOL || word.token != "Semicolon")
+				exit_();
+			return;
+		}
 			// 定义语句
 		else if (word.token == "int") {
 			word = get_symbol(file);
@@ -690,6 +883,19 @@ void Stmt(FILE *file) {
 			stringstream stream;
 			stream << register_num - 1;
 			left_value_pointer = "%" + stream.str();
+		}
+			// 处理函数
+		else if (left_value.is_function) {
+			print_function_elem(left_value);
+			while (word.type != SYMBOL || word.token != "Semicolon") {
+				if (is_variable_list_contains_in_all_layer(word)) {
+					variable_list_elem elem = get_variable(word);
+					if (elem.is_function)
+						print_function_elem(elem);
+				}
+				word = get_symbol(input);
+			}
+			return;
 		} else {
 			left_value_pointer = get_pointer(x);
 		}
@@ -823,31 +1029,47 @@ void Stmt(FILE *file) {
 void CompUnit(FILE *in, FILE *out) {
 	input = in;
 	output = out;
+	init();
 	word = get_symbol(in);
-	// 全局变量定义
+	// 全局变量和函数定义
 	while (true) {
 		string variable_name;
 		variable_list_elem elem;
 		elem.is_global = true;
+		int function_type;
 		if (word.type == IDENT && word.token == "const") {
 			word = get_symbol(input);
 			elem.is_const = true;
 		}
-		if (word.type != IDENT || word.token != "int")
+		if (word.type != IDENT || (word.token != "int" && word.token != "void"))
 			exit_();
+		if (word.token == "int")
+			function_type = INT;
+		else function_type = VOID;
 		word = get_symbol(input);
 		if (word.type == IDENT && word.token == "main")
 			break;
+		string function_name = word.token;
+		variable_name = word.token;
+		int need_get_symbol = false;
+		word = get_symbol(input);
+		if (word.type == SYMBOL && word.token == "LPar") {
+			FuncDef(input, false, function_type, function_name);
+			continue;
+		}
 
 		// 处理一句话中的多重定义
 		while (word.type != SYMBOL || word.token != "Semicolon") {
-			variable_name = word.token;
+			if (need_get_symbol)
+				variable_name = word.token;
 			elem.token.type = IDENT;
 			elem.token.token = variable_name;
 			elem.saved_pointer = "@" + variable_name;
 			elem.code_block_layer = 0;
 
-			word = get_symbol(input);
+			if (need_get_symbol)
+				word = get_symbol(input);
+			else need_get_symbol = true;
 
 			while (word.type == SYMBOL && word.token == "[") {
 				elem.is_array = true;
@@ -968,7 +1190,6 @@ void CompUnit(FILE *in, FILE *out) {
 			} else exit_();
 		}
 	}
-	init();
 	FuncDef(input, true);
 	word = get_symbol(in);
 	if (word.type == "Error")
@@ -1078,11 +1299,13 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 }
 
 void init() {
-	fprintf(output, "\n"
-					"declare i32 @getint()\n"
+	fseek(output, 0, SEEK_SET);
+	fprintf(output, "declare i32 @getint()\n"
 					"declare void @putint(i32)\n"
 					"declare i32 @getch()\n"
 					"declare void @putch(i32)\n"
+					"declare i32 @getarray(i32*)\n"
+					"declare void @putarray(i32, i32*)\n"
 					"declare void @memset(i32*, i32, i32)\n\n");
 }
 
@@ -1170,7 +1393,7 @@ string get_pointer(const return_token &token) {
 
 void print_variable_table() {
 	for (auto &i: variable_list) {
-		if (i.is_global)
+		if (i.is_global || i.is_function)
 			continue;
 		fprintf(output, "%%%d = load %s, %s %s\t; 代码块中重新定义变量 %s\n", register_num,
 				i.variable_type.c_str(), (i.variable_type + "*").c_str(), i.saved_pointer.c_str(),
@@ -1247,5 +1470,45 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 		}
 	}
 	current_pos[dimension - 1]++;
+	word = get_symbol(input);
+}
+
+void reload_param() {
+	for (auto &variable: variable_list) {
+		if (variable.code_block_layer == 1) {
+			fprintf(output, "%%%d = alloca %s\n", register_num, variable.variable_type.c_str());
+			fprintf(output, "store %s %s, %s* %d\n", variable.variable_type.c_str(), variable.saved_register.c_str(),
+					variable.variable_type.c_str(), register_num);
+			stringstream stream;
+			stream << register_num++;
+			variable.saved_pointer = "%" + stream.str();
+			fprintf(output, "%%%d = load %s, %s* %s\n", register_num++, variable.variable_type.c_str(),
+					variable.variable_type.c_str(), variable.saved_pointer.c_str());
+		}
+	}
+}
+
+void print_function_elem(const variable_list_elem &elem) {
+	word = get_symbol(input);
+	if (word.type != SYMBOL || word.token != "LPar")
+		exit_();
+	number_stack_elem params[10];
+	for (int i = 1; i <= elem.function_param_num; i++) {
+		word = get_symbol(input);
+		params[i] = calcAntiPoland(input);
+	}
+	if (word.type != SYMBOL || word.token != "RPar")
+		exit_();
+	if (elem.function_return_type == INT)
+		fprintf(output, "call i32 @%s(", elem.token.token.c_str());
+	else
+		fprintf(output, "call void @%s(", elem.token.token.c_str());
+	for (int i = 1; i <= elem.function_param_num; i++) {
+		fprintf(output, "%s ", elem.function_param_type[i].c_str());
+		print_number_stack_elem(params[i]);
+		fprintf(output, ", ");
+	}
+	fseek(output, -2, SEEK_CUR);
+	fprintf(output, ")\n");
 	word = get_symbol(input);
 }

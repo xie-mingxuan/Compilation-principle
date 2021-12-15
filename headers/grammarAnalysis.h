@@ -13,12 +13,15 @@
 
 #define IDENT "Ident"
 #define SYMBOL "Symbol"
+#define NUMBER "Number"
 #define IF_TRUE 1
 #define IF_FALSE 2
 #define IF_FINAL 3
 #define WHILE_COND 4
 #define WHILE_LOOP 5
 #define WHILE_FINAL 6
+#define INT 7
+#define VOID 8
 
 using namespace std;
 
@@ -27,13 +30,17 @@ typedef struct {
 	bool is_const = false;            // 标记是否为 常量；默认值为 false
 	bool is_global = false;            // 标记是否为 全局变量；默认为 false
 	bool is_array = false;            // 标记是否为 数组；默认为 false
+	bool is_function = false;        // 标记是否为 函数；默认为 false
 	string saved_pointer;            // 记录当前变量的指针地址
 	string saved_register;            // 记录当前变量的数值存储地址
-	string variable_type;			// 记录变量的数据类型
+	string variable_type;            // 记录变量的数据类型
 	int code_block_layer;            // 记录当前变量的作用域
 	int global_variable_value;        // 如果是全局变量，记录该变量的值
 	int dimension = 0;                // 如果是数组，记录数组的维度，默认值为 0
 	int dimension_num[10] = {'\0'};    // 如果是数组，记录数组的维度大小，默认值为 0
+	int function_return_type = INT;        // 如果是函数，记录函数的返回值形式；默认是 int 类型的返回值
+	int function_param_num = 0;          // 如果是函数，记录函数的参数个数
+	string function_param_type[10];        // 如果是函数，记录函数参数的类型
 } variable_list_elem;
 
 typedef struct {
@@ -113,15 +120,15 @@ void VarDef(FILE *);
 
 number_stack_elem InitVal(FILE *);
 
-void FuncDef(FILE *, bool = false);
+void FuncDef(FILE *, bool is_main_func = false, int function_type = INT, const string &function_name = "main");
 
 void FuncType(FILE *);
 
-void Block(FILE *);
+void Block(FILE *input, int function_type = INT, bool is_function_define = false);
 
-void BlockItem(FILE *);
+void BlockItem(FILE *input, int function_type = INT);
 
-void Stmt(FILE *);
+void Stmt(FILE *input, int function_type = INT);
 
 number_stack_elem Exp(FILE *);
 
@@ -156,5 +163,9 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 		   bool is_global_define = false);
 
 void init();
+
+void reload_param();
+
+void print_function_elem(const variable_list_elem &elem);
 
 #endif //LAB1_GRAMMARANALYSIS_H
