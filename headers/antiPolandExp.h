@@ -6,6 +6,7 @@
 #include "cstdlib"
 #include "lexicalAnalysis.h"
 #include "grammarAnalysis.h"
+#include "cassert"
 #include "stack"
 #include "queue"
 
