@@ -487,7 +487,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 						stream << register_num++;
 						x.variable = "%" + stream.str();
 						number_stack.push(x);
-						if(word.token == "RPar")
+						if (word.token == "RPar" || word.token == "Comma")
 							continue;
 					}
 						// 处理函数

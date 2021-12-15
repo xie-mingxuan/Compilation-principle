@@ -414,6 +414,14 @@ void Stmt(FILE *file, int function_type) {
 					return;
 				can_deal_stmt_left--;
 			}
+
+			if (last_token_is_if_or_else && !undefined_code_block_stack.empty()) {
+				last_token_is_if_or_else = false;
+				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+				undefined_code_block_stack.pop();
+				print_code_block(elem);
+			}
+
 			word = get_symbol(file);
 			if (function_type == INT) {
 				number_stack_elem res = calcAntiPoland(file);
@@ -842,6 +850,15 @@ void Stmt(FILE *file, int function_type) {
 		return_token x = word;
 		string left_value_pointer;
 
+		// 如果赋值语句正处在一个 if_else 代码块的下面，则将其作为该代码块的成分
+		if (last_token_is_if_or_else) {
+			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
+			undefined_code_block_stack.pop();
+//			fprintf(output, "\n\n\n%%%d:\t; 定义省略了大括号的赋值语句\n", elem.register_num);
+			print_code_block(elem);
+			print_variable_table();
+		}
+
 		variable_list_elem left_value = get_variable(x);
 		if (left_value.is_array) {
 			number_stack_elem array_dimension_value[10];
@@ -895,6 +912,7 @@ void Stmt(FILE *file, int function_type) {
 				}
 				word = get_symbol(input);
 			}
+			word = get_symbol(input);
 			return;
 		} else {
 			left_value_pointer = get_pointer(x);
@@ -922,14 +940,6 @@ void Stmt(FILE *file, int function_type) {
 			can_deal_stmt_left--;
 		}
 
-		// 如果赋值语句正处在一个 if_else 代码块的下面，则将其作为该代码块的成分
-		if (last_token_is_if_or_else) {
-			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
-			undefined_code_block_stack.pop();
-//			fprintf(output, "\n\n\n%%%d:\t; 定义省略了大括号的赋值语句\n", elem.register_num);
-			print_code_block(elem);
-			print_variable_table();
-		}
 		word = get_symbol(file);
 		number_stack_elem res = calcAntiPoland(file);
 		if (res.is_variable)
@@ -1057,9 +1067,10 @@ void CompUnit(FILE *in, FILE *out) {
 			FuncDef(input, false, function_type, function_name);
 			continue;
 		}
-
+		goto label1;
 		// 处理一句话中的多重定义
 		while (word.type != SYMBOL || word.token != "Semicolon") {
+			label1:
 			if (need_get_symbol)
 				variable_name = word.token;
 			elem.token.type = IDENT;
