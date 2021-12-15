@@ -1488,7 +1488,7 @@ void reload_param() {
 	for (auto &variable: variable_list) {
 		if (variable.code_block_layer == 1) {
 			fprintf(output, "%%%d = alloca %s\n", register_num, variable.variable_type.c_str());
-			fprintf(output, "store %s %s, %s* %d\n", variable.variable_type.c_str(), variable.saved_register.c_str(),
+			fprintf(output, "store %s %s, %s* %%%d\n", variable.variable_type.c_str(), variable.saved_register.c_str(),
 					variable.variable_type.c_str(), register_num);
 			stringstream stream;
 			stream << register_num++;
