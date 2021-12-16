@@ -508,6 +508,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 							word = get_symbol(input);
 							params[i] = calcAntiPoland(input);
 						}
+						if (elem.function_param_num == 0)
+							word = get_symbol(input);
 						if (word.type != SYMBOL || word.token != "RPar")
 							exit_();
 						assert(elem.function_return_type == INT);
