@@ -652,16 +652,15 @@ void Stmt(FILE *file, int function_type) {
 		else if (word.token == "Continue" || word.token == "Break") {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			stack<undefined_code_block_stack_elem> temp;
-			// 这一段我也不知道为啥我写出来了，但是他好像没啥用，也不敢删
-//			if (last_token_is_if_or_else) {
-//				if (elem.block_type == IF_TRUE)
-//					fprintf(output, "\n\n\nIF_TRUE_%d:\n", elem.register_num);
-//				else
-//					fprintf(output, "\n\n\nIF_FALSE_%d:\n", elem.register_num);
-//				last_token_is_if_or_else = false;
-//				undefined_code_block_stack.pop();
-//				elem = undefined_code_block_stack.top();
-//			}
+			if (last_token_is_if_or_else) {
+				if (elem.block_type == IF_TRUE)
+					fprintf(output, "\n\n\nIF_TRUE_%d:\n", elem.register_num);
+				else
+					fprintf(output, "\n\n\nIF_FALSE_%d:\n", elem.register_num);
+				last_token_is_if_or_else = false;
+				undefined_code_block_stack.pop();
+				elem = undefined_code_block_stack.top();
+			}
 			while (elem.block_type != WHILE_FINAL) {
 				temp.push(elem);
 				undefined_code_block_stack.pop();
