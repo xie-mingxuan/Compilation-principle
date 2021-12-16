@@ -389,7 +389,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				if (!next_word_can_operator)
 					exit(-1);
 
-				if (word.token == "Mult" || word.token == "Div" || word.token == "Mod")
+				if (word.token == "Div" || word.token == "Mod")
 					next_word_can_operator = false;
 				else next_word_can_operator = true;
 
