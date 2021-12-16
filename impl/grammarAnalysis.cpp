@@ -482,7 +482,7 @@ void Stmt(FILE *file, int function_type) {
 				word = get_symbol(file);
 
 				// 处理 else-if 语句
-				bool else_if_have_else_stmt = true; // 记录 else if 语句是否有最终的 else
+				bool else_if_have_else_stmt = false; // 记录 else if 语句是否有最终的 else
 				while (word.type == IDENT && word.token == "If") {
 					is_else_if = true;
 					bool can_deal_multiply_stmt_temp_1 = can_deal_multiply_stmt;
@@ -509,12 +509,11 @@ void Stmt(FILE *file, int function_type) {
 					print_variable_table();
 				}
 
-				is_else_if = false;
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
 				print_code_block(elem);
 				print_variable_table();
-				if (else_if_have_else_stmt) {
+				if (else_if_have_else_stmt || !is_else_if) {
 					if (word.type != SYMBOL || word.token != "LBrace")
 						Stmt(input);
 					else {
@@ -528,6 +527,7 @@ void Stmt(FILE *file, int function_type) {
 						word = get_symbol(input);
 					}
 				}
+				is_else_if = false;
 				if (need_br) {
 					stack<undefined_code_block_stack_elem> temp;
 					undefined_code_block_stack_elem elem1 = undefined_code_block_stack.top();
