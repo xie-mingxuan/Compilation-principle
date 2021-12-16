@@ -521,14 +521,15 @@ void Stmt(FILE *file, int function_type) {
 				undefined_code_block_stack.pop();
 				print_code_block(elem);
 				print_variable_table();
-				//if (else_if_have_else_stmt || !is_else_if) {
-				if (else_if_have_else_stmt) {
+				if (else_if_have_else_stmt || !is_else_if) {
+//				if (else_if_have_else_stmt) {
 					if (word.type != SYMBOL || word.token != "LBrace")
 						Stmt(input);
 					else {
 						code_block_layer++;
 						word = get_symbol(input);
 						last_token_is_if_or_else = false;
+						update_can_deal_multiply_stmt();
 						while (word.type != SYMBOL || word.token != "RBrace")
 							BlockItem(input, function_type);
 						code_block_layer--;
