@@ -1551,7 +1551,8 @@ void print_function_elem(const variable_list_elem &elem) {
 		print_number_stack_elem(params[i]);
 		fprintf(output, ", ");
 	}
-	fseek(output, -2, SEEK_CUR);
+	if (elem.function_param_num != 0)
+		fseek(output, -2, SEEK_CUR);
 	fprintf(output, ")\n");
 	word = get_symbol(input);
 }
