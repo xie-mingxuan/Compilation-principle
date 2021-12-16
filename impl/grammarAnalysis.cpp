@@ -291,15 +291,12 @@ void ConstDef(FILE *file) {
 	} else {
 		number_stack_elem res = ConstExp(file);
 		elem.token.num = res.token.num;
-		if (res.is_variable)
-			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
-		else
-			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
-		fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n", register_num, get_pointer(x).c_str(),
-				elem.token.token.c_str());
-		stringstream stream1;
-		stream1 << register_num++;
-		set_register(x, "%" + stream1.str());
+		if (res.token.num >= 0) {
+			fprintf(output, "%%%d = add i32 0, %d", register_num++, res.token.num);
+		} else {
+			fprintf(output, "%%%d = sub i32 0, %d", register_num++, abs(res.token.num));
+		}
+		fprintf(output, "\t\t\t; 将常数 %s 定义在 %%%d 的位置\n", elem.token.token.c_str(), register_num - 1);
 	}
 	variable_list.push_back(elem);
 }
