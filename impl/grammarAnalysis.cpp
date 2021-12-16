@@ -114,7 +114,8 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 
 	if (!is_main_func) {
 		variable_list.push_back(function_elem);
-		fseek(output, -2, SEEK_CUR);
+		if (function_elem.function_param_num != 0)
+			fseek(output, -2, SEEK_CUR);
 	}
 	word = get_symbol(file);
 	fprintf(output, ")");
