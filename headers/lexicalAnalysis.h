@@ -18,7 +18,8 @@ typedef struct x {
 	int num = 0;
 
 	bool operator==(const x &b) const {
-		return this->type == b.type && this->token == b.token && this->num == b.num;
+//		return this->type == b.type && this->token == b.token && this->num == b.num;
+		return this->type == b.type && this->token == b.token;
 	}
 
 	bool operator!=(const x &b) const {
@@ -28,7 +29,7 @@ typedef struct x {
 
 return_token get_symbol(FILE *file);
 
-bool is_cond_symbol(const return_token&);
+bool is_cond_symbol(const return_token &);
 
 
 #endif //C_LEXICALANALYSIS_H
