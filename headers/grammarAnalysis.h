@@ -41,6 +41,7 @@ typedef struct {
 	int function_return_type = INT;        // 如果是函数，记录函数的返回值形式；默认是 int 类型的返回值
 	int function_param_num = 0;          // 如果是函数，记录函数的参数个数
 	string function_param_type[10];        // 如果是函数，记录函数参数的类型
+	int function_param_dimension[10] = {'\0'};        // 如果是函数，记录参数的维度
 } variable_list_elem;
 
 typedef struct {

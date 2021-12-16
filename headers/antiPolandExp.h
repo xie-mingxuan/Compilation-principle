@@ -20,6 +20,7 @@ typedef struct {
 	bool is_function;
 	return_token token;
 	string variable;
+	int array_dimension;
 } number_stack_elem;
 
 /**
