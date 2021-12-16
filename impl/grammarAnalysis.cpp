@@ -1491,14 +1491,16 @@ void reload_param() {
 			fprintf(output, "store %s %s, %s* %%%d\n", variable.variable_type.c_str(), variable.saved_register.c_str(),
 					variable.variable_type.c_str(), register_num);
 			stringstream stream;
-			if (variable.variable_type == "i32*")
-				stream << ++register_num;
-			else
-				stream << register_num++;
+			stream << register_num++;
 			variable.saved_pointer = "%" + stream.str();
 			fprintf(output, "%%%d = load %s, %s* %s\n", register_num++, variable.variable_type.c_str(),
 					variable.variable_type.c_str(), variable.saved_pointer.c_str());
-			variable.variable_type = "i32";
+			if (variable.variable_type == "i32*") {
+				variable.variable_type = "i32";
+				stringstream stream1;
+				stream1 << register_num - 1;
+				variable.saved_pointer = "%" + stream1.str();
+			}
 		}
 	}
 }
