@@ -492,6 +492,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 							fprintf(output, "%%%d = load i32, i32* %%%d\t; 加载数组元素的值\n", register_num, register_num - 1);
 							stream << register_num++;
 						} else stream << register_num - 1;
+						x.array_dimension = elem.dimension - (i - 1);
 						x.variable = "%" + stream.str();
 						number_stack.push(x);
 						if (word.token == "RPar" || word.token == "Comma")
@@ -512,6 +513,10 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 						assert(elem.function_return_type == INT);
 						fprintf(output, "%%%d = call i32 @%s (", register_num, elem.token.token.c_str());
 						for (int i = 1; i <= elem.function_param_num; i++) {
+							if (elem.function_param_type[i] == "i32*") {
+								if (elem.function_param_dimension[i] != params[i].array_dimension)
+									exit_();
+							}
 							fprintf(output, "%s ", elem.function_param_type[i].c_str());
 							print_number_stack_elem(params[i]);
 							fprintf(output, ", ");

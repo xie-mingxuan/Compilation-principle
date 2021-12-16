@@ -86,6 +86,7 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 			if (word.type != SYMBOL || word.token != "]")
 				exit_();
 			elem.dimension++;
+			function_elem.function_param_dimension[++func_param_number]++;
 			word = get_symbol(file);
 			// 二维数组
 			if (word.type == SYMBOL && word.token == "[") {
@@ -96,10 +97,11 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 				if (word.type != SYMBOL || word.token != "]")
 					exit_();
 				word = get_symbol(file);
+				function_elem.function_param_dimension[func_param_number]++;
 			}
 			// 数组指针（无论一维还是二维）都是 i32 * 类型
 			elem.variable_type = "i32*";
-			function_elem.function_param_type[++func_param_number] = "i32*";
+			function_elem.function_param_type[func_param_number] = "i32*";
 			elem.is_array = true;
 			variable_list.push_back(elem);
 		}
