@@ -482,7 +482,7 @@ void Stmt(FILE *file, int function_type) {
 				word = get_symbol(file);
 
 				// 处理 else-if 语句
-				bool else_if_have_else_stmt = false; // 记录 else if 语句是否有最终的 else
+				bool else_if_have_else_stmt = true; // 记录 else if 语句是否有最终的 else
 				while (word.type == IDENT && word.token == "If") {
 					is_else_if = true;
 					bool can_deal_multiply_stmt_temp_1 = can_deal_multiply_stmt;
