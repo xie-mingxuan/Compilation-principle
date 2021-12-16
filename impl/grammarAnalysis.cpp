@@ -20,6 +20,7 @@ bool can_deal_multiply_stmt = true;            // 如果可以连续处理多句
 int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理多少 stmt 语句
 bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
 int code_block_layer = 0;                    // 标记现在是第几层大括号（局部变量的层数）
+bool have_returned = false;                  // 标记函数现在是否已经进行了返回
 stack<undefined_code_block_stack_elem> undefined_code_block_stack;
 
 void update_can_deal_multiply_stmt();
@@ -167,8 +168,11 @@ void Block(FILE *file, int function_type, bool is_function_define) {
 
 	//word = get_symbol(file);
 
-	if (function_type == VOID)
-		fprintf(output, "ret void\n");
+	if (!have_returned) {
+		if (function_type == INT)
+			fprintf(output, "return i32 0\n");
+		else fprintf(output, "return void\n");
+	}
 
 	fprintf(output, "}\n\n");
 }
@@ -438,10 +442,12 @@ void Stmt(FILE *file, int function_type) {
 			if (word.type != SYMBOL || word.token != "Semicolon")
 				exit_();
 			word = get_symbol(file);
+			have_returned = true;
 			return;
 		}
 			// 判断语句
 		else if (word.token == "If") {
+			have_returned = false;
 			if (!can_deal_multiply_stmt) {
 				if (can_deal_stmt_left == 0)
 					return;
@@ -478,6 +484,7 @@ void Stmt(FILE *file, int function_type) {
 				return;
 
 			if (word.type == IDENT && word.token == "Else") {
+				have_returned = false;
 				last_token_is_if_or_else = true;
 				word = get_symbol(file);
 
@@ -546,6 +553,7 @@ void Stmt(FILE *file, int function_type) {
 				last_token_is_if_or_else = false;
 				need_br = true;
 			} else {
+				have_returned = false;
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
 				undefined_code_block_stack_elem final_elem = undefined_code_block_stack.top();
@@ -558,6 +566,7 @@ void Stmt(FILE *file, int function_type) {
 			}
 
 			if (!undefined_code_block_stack.empty()) {
+				have_returned = false;
 				undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 				undefined_code_block_stack.pop();
 //				fprintf(output, "\n\n\n%d:\t; 定义 if-else 语句之后的代码块\n", elem.register_num);
@@ -602,6 +611,7 @@ void Stmt(FILE *file, int function_type) {
 		}
 			// 循环语句
 		else if (word.token == "While") {
+			have_returned = false;
 			word = get_symbol(input);
 			if (word.type != SYMBOL || word.token != "LPar")
 				exit_();
