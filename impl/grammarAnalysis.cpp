@@ -471,7 +471,7 @@ void Stmt(FILE *file, int function_type) {
 			int can_deal_stmt_left_temp = can_deal_stmt_left;
 			update_can_deal_multiply_stmt();
 			last_token_is_if_or_else = true;
-			Stmt(file);
+			Stmt(file, function_type);
 
 			if (is_else_if)
 				return;
@@ -521,7 +521,7 @@ void Stmt(FILE *file, int function_type) {
 						word = get_symbol(input);
 						last_token_is_if_or_else = false;
 						while (word.type != SYMBOL || word.token != "RBrace")
-							BlockItem(input);
+							BlockItem(input, function_type);
 						code_block_layer--;
 						update_variable_list();
 						word = get_symbol(input);
@@ -633,7 +633,7 @@ void Stmt(FILE *file, int function_type) {
 			print_variable_table();
 			word = get_symbol(input);
 			while (word.type != SYMBOL || word.token != "RBrace")
-				BlockItem(input);
+				BlockItem(input, function_type);
 			code_block_layer--;
 			update_variable_list();
 			if (need_br)
@@ -1027,7 +1027,7 @@ void Stmt(FILE *file, int function_type) {
 
 		word = get_symbol(file);
 		while (word.type != SYMBOL || word.token != "RBrace")
-			BlockItem(file);
+			BlockItem(file, function_type);
 		code_block_layer--;
 		update_variable_list();
 		last_token_is_if_or_else = last_token_is_if_or_else_temp;
@@ -1532,17 +1532,20 @@ void print_function_elem(const variable_list_elem &elem) {
 	if (word.type != SYMBOL || word.token != "LPar")
 		exit_();
 	number_stack_elem params[10];
-	for (int i = 1; i <= elem.function_param_num; i++) {
+	int i;
+	for (i = 1; i <= elem.function_param_num; i++) {
 		word = get_symbol(input);
 		params[i] = calcAntiPoland(input);
 	}
+	if (i == 1)
+		word = get_symbol(input);
 	if (word.type != SYMBOL || word.token != "RPar")
 		exit_();
 	if (elem.function_return_type == INT)
 		fprintf(output, "%%%d = call i32 @%s(", register_num++, elem.token.token.c_str());
 	else
 		fprintf(output, "call void @%s(", elem.token.token.c_str());
-	for (int i = 1; i <= elem.function_param_num; i++) {
+	for (i = 1; i <= elem.function_param_num; i++) {
 		fprintf(output, "%s ", elem.function_param_type[i].c_str());
 		print_number_stack_elem(params[i]);
 		fprintf(output, ", ");
