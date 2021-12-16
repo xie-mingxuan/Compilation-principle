@@ -292,7 +292,7 @@ number_stack_elem ConstInitVal(FILE *file, const return_token &token) {
 		if (word.type != SYMBOL || word.token != "LBrace")
 			exit_();
 		word = get_symbol(input);
-		int current_define_pos[10] = {'\0'};
+		int current_define_pos[50] = {'\0'};
 		init_array(elem, current_define_pos, 1, true, false);
 	}
 }
@@ -379,7 +379,7 @@ void VarDef(FILE *file) {
 		// lab 7 要求可以定义数组元素
 		if (word.type != SYMBOL || word.token != "LBrace")
 			exit_();
-		int current_define_pos[10] = {'\0'};
+		int current_define_pos[50] = {'\0'};
 		word = get_symbol(input);
 		if (word.type == SYMBOL && word.token == "RBrace") {
 			int total = 1;
@@ -887,7 +887,7 @@ void Stmt(FILE *file, int function_type) {
 
 		variable_list_elem left_value = get_variable(x);
 		if (left_value.is_array) {
-			number_stack_elem array_dimension_value[10];
+			number_stack_elem array_dimension_value[50];
 			int offset = register_num;
 			fprintf(output, "%%%d = add i32 0, 0\t\t\t; 定义临时变量偏移量 0，用来计算数组元素的位置\n", register_num++);
 			for (int i = 1; i <= left_value.dimension; i++) {
@@ -1548,7 +1548,7 @@ void print_function_elem(const variable_list_elem &elem) {
 	word = get_symbol(input);
 	if (word.type != SYMBOL || word.token != "LPar")
 		exit_();
-	number_stack_elem params[10];
+	number_stack_elem params[50];
 	int i;
 	for (i = 1; i <= elem.function_param_num; i++) {
 		word = get_symbol(input);

@@ -37,11 +37,11 @@ typedef struct {
 	int code_block_layer;            // 记录当前变量的作用域
 	int global_variable_value;        // 如果是全局变量，记录该变量的值
 	int dimension = 0;                // 如果是数组，记录数组的维度，默认值为 0
-	int dimension_num[10] = {'\0'};    // 如果是数组，记录数组的维度大小，默认值为 0
+	int dimension_num[50] = {'\0'};    // 如果是数组，记录数组的维度大小，默认值为 0
 	int function_return_type = INT;        // 如果是函数，记录函数的返回值形式；默认是 int 类型的返回值
 	int function_param_num = 0;          // 如果是函数，记录函数的参数个数
-	string function_param_type[10];        // 如果是函数，记录函数参数的类型
-	int function_param_dimension[10] = {'\0'};        // 如果是函数，记录参数的维度
+	string function_param_type[50];        // 如果是函数，记录函数参数的类型
+	int function_param_dimension[50] = {'\0'};        // 如果是函数，记录参数的维度
 } variable_list_elem;
 
 typedef struct {

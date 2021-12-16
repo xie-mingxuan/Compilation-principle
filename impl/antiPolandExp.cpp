@@ -444,7 +444,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 					variable_list_elem elem = get_variable(word);
 					// 处理数组元素
 					if (elem.is_array) {
-						number_stack_elem array_dimension_value[10];
+						number_stack_elem array_dimension_value[50];
 						int offset = register_num;
 						fprintf(output, "%%%d = add i32 0, 0\t\t\t; 定义临时变量偏移量 0，用来计算数组元素的位置\n", register_num++);
 						int i;
@@ -500,7 +500,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 					}
 						// 处理函数
 					else if (elem.is_function) {
-						number_stack_elem params[10];
+						number_stack_elem params[50];
 						word = get_symbol(input);
 						if (word.type != SYMBOL || word.token != "LPar")
 							exit_();
