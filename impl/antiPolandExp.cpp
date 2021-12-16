@@ -523,7 +523,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 							print_number_stack_elem(params[i]);
 							fprintf(output, ", ");
 						}
-						fseek(output, -2, SEEK_CUR);
+						if (elem.function_param_num != 0)
+							fseek(output, -2, SEEK_CUR);
 						fprintf(output, ")\n");
 						number_stack_elem res;
 						stringstream stream;
