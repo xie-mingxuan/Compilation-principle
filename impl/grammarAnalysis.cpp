@@ -926,6 +926,11 @@ void Stmt(FILE *file, int function_type) {
 				word = get_symbol(input);
 			}
 			word = get_symbol(input);
+
+			if (last_token_is_if_or_else && !undefined_code_block_stack.empty()) {
+				fprintf(output, "br label %%IF_FINAL_%d\n", undefined_code_block_stack.top().register_num);
+			}
+			last_token_is_if_or_else = false;
 			return;
 		} else {
 			left_value_pointer = get_pointer(x);
