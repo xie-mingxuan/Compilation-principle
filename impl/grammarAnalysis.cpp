@@ -1209,6 +1209,7 @@ void CompUnit(FILE *in, FILE *out) {
 				if (word.type != SYMBOL || word.token != "LBrace")
 					exit_();
 				int dimension = 1;
+				int defined_dimension_num[50] = {'\0'};
 				int number = 0;
 				int total_number = 0;
 				word = get_symbol(input);
@@ -1223,18 +1224,19 @@ void CompUnit(FILE *in, FILE *out) {
 							for (int i = total_number + 1; i <= dimension_total; i++)
 								fprintf(output, "i32 0, ");
 						} else {
-							for (int i = number + 1; i <= dimension_total; i++) {
+							for (int i = defined_dimension_num[dimension] + 1; i <= dimension_total; i++) {
 								fprintf(output, "i32 0, ");
 								total_number++;
 							}
 						}
-						number = 0;
+						defined_dimension_num[dimension] = 0;
+						defined_dimension_num[dimension - 1] += dimension_total;
 						dimension--;
 					} else if (word.type == SYMBOL && word.token == "Comma") {}
 					else {
 						number_stack_elem res = calcAntiPoland(input, true, true);
 						fprintf(output, "i32 %d, ", res.token.num);
-						number++;
+						defined_dimension_num[dimension]++;
 						total_number++;
 						continue;
 					}
