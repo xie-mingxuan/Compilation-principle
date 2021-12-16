@@ -229,6 +229,9 @@ void ConstDef(FILE *file) {
 	elem.code_block_layer = code_block_layer;
 	elem.token = word;
 	elem.is_const = true;
+	stringstream stream;
+	stream << register_num++;
+	elem.saved_pointer = "%" + stream.str();
 
 	// 判断该变量是否为数组
 	word = get_symbol(file);
@@ -238,46 +241,74 @@ void ConstDef(FILE *file) {
 		dimension++;
 		is_array_define = true;
 		elem.is_array = true;
+		word = get_symbol(input);
 		elem.dimension_num[dimension] = calcAntiPoland(input, true, false).token.num;
 		if (elem.dimension_num[dimension] <= 0)
 			exit_();
-		word = get_symbol(input);
 		if (word.type != SYMBOL || word.token != "]")
 			exit_();
 		word = get_symbol(input);
 	}
 	elem.dimension = dimension;
 
-	stringstream stream;
-	stream << register_num++;
-	elem.saved_pointer = "%" + stream.str();
-	variable_list.push_back(elem);
 	if (is_array_define) {
 		int total = 1;
 		for (int i = 1; i <= elem.dimension; i++)
-			total *= elem.dimension_num[dimension];
-		fprintf(output, "%s = alloca [%d x i32]\t\t; 将常量数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
+			total *= elem.dimension_num[i];
+		fprintf(output, "%s = alloca [%d x i32]\t\t; 将数组 %s 的指针指定在 %s 的位置\n", elem.saved_pointer.c_str(), total,
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		stringstream stream1;
 		stream1 << total;
 		elem.variable_type = "[" + stream1.str() + " x i32]";
 	} else {
-		fprintf(output, "%s = alloca i32\t\t; 将常量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
+		fprintf(output, "%s = alloca i32\t\t; 将变量 %s 的指针定义在 %s 的位置\n", elem.saved_pointer.c_str(),
 				elem.token.token.c_str(), elem.saved_pointer.c_str());
 		elem.variable_type = "i32";
 	}
 
-	if (word.type != SYMBOL || word.token != "Assign")
-		exit_();
+	if (word.type != SYMBOL || word.token != "Assign") {
+		variable_list.push_back(elem);
+		return;
+	}
+
 	word = get_symbol(file);
 
-	ConstInitVal(file, x);
+	if (is_array_define) {
+		// lab 7 要求可以定义数组元素
+		if (word.type != SYMBOL || word.token != "LBrace")
+			exit_();
+		int current_define_pos[50] = {'\0'};
+		word = get_symbol(input);
+		if (word.type == SYMBOL && word.token == "RBrace") {
+			int total = 1;
+			for (int i = 1; i <= elem.dimension; i++)
+				total *= elem.dimension_num[i];
+			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 0\n",
+					register_num++, elem.variable_type.c_str(), elem.variable_type.c_str(), elem.saved_pointer.c_str());
+			fprintf(output, "call void @memset(i32* %%%d, i32 0, i32 %d)\n", register_num - 1, total);
+		} else
+			init_array(elem, current_define_pos, 1, false, false);
+	} else {
+		number_stack_elem res = ConstExp(file);
+		elem.token.num = res.token.num;
+		if (res.is_variable)
+			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(x).c_str());
+		else
+			fprintf(output, "store i32 %d, i32* %s\n", res.token.num, get_pointer(x).c_str());
+		fprintf(output, "%%%d = load i32, i32* %s\t\t; define variable '%s'\n", register_num, get_pointer(x).c_str(),
+				elem.token.token.c_str());
+		stringstream stream1;
+		stream1 << register_num++;
+		set_register(x, "%" + stream1.str());
+	}
+	variable_list.push_back(elem);
 }
 
-number_stack_elem ConstInitVal(FILE *file, const return_token &token) {
+number_stack_elem ConstInitVal(FILE *file, return_token &token) {
 	variable_list_elem elem = get_variable(token);
 	if (!elem.is_array) {
 		number_stack_elem res = ConstExp(file);
+		token.num = res.token.num;
 		if (res.is_variable)
 			fprintf(output, "store i32 %s, i32* %s\n", res.variable.c_str(), get_pointer(token).c_str());
 		else

@@ -111,7 +111,7 @@ void BType(FILE *);
 
 void ConstDef(FILE *);
 
-number_stack_elem ConstInitVal(FILE *input, const return_token &token);
+number_stack_elem ConstInitVal(FILE *input, return_token &token);
 
 number_stack_elem ConstExp(FILE *);
 

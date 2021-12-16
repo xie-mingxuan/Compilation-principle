@@ -271,7 +271,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 			// 如果操作符是分号或逗号，则证明运算结束，按照逆波兰表达式的方式进行运算然后输出
 			if (word.token == "Semicolon" || word.token == "Comma" || word.token == "]" || word.token == "RBrace" ||
 				word.token == "LogicOr" || word.token == "RPar") {
-				if (!is_global_define) {
+				if (!is_global_define && !is_const_define) {
 					while (!operator_stack.empty())
 						pop_and_print(number_stack, operator_stack);
 				} else {
@@ -438,6 +438,16 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 							printf("\n'%s' is not a const variable value!\n", word.token.c_str());
 							exit(-1);
 						}
+						number_stack_elem elem;
+						elem.token.num = word.num;
+						elem.token.type = NUMBER;
+						elem.is_variable = false;
+						elem.is_function = false;
+						number_stack.push(elem);
+						word = get_symbol(input);
+						last_word_is_operator = false;
+						next_word_can_operator = true;
+						continue;
 					}
 
 					// lab 7 要求对数组元素进行计算
