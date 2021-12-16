@@ -21,6 +21,7 @@ int can_deal_stmt_left = 0;                    // 标记当前仍然可以处理
 bool need_br = true;                        // 标记当前是否还需要 br 跳转语句
 int code_block_layer = 0;                    // 标记现在是第几层大括号（局部变量的层数）
 bool have_returned = false;                  // 标记函数现在是否已经进行了返回
+bool have_print_block_name = false;            // 标记当前已经打印过了块名称
 stack<undefined_code_block_stack_elem> undefined_code_block_stack;
 
 void update_can_deal_multiply_stmt();
@@ -521,6 +522,7 @@ void Stmt(FILE *file, int function_type) {
 				undefined_code_block_stack.pop();
 				print_code_block(elem);
 				print_variable_table();
+				have_print_block_name = true;
 				if (else_if_have_else_stmt || !is_else_if) {
 //				if (else_if_have_else_stmt) {
 					if (word.type != SYMBOL || word.token != "LBrace")
@@ -571,6 +573,7 @@ void Stmt(FILE *file, int function_type) {
 				fprintf(output, "br label %%IF_FINAL_%d\n", final_elem.register_num);
 				need_br = false;
 			}
+			have_print_block_name = false;
 
 			if (!undefined_code_block_stack.empty()) {
 				have_returned = false;
@@ -877,7 +880,7 @@ void Stmt(FILE *file, int function_type) {
 		string left_value_pointer;
 
 		// 如果赋值语句正处在一个 if_else 代码块的下面，则将其作为该代码块的成分
-		if (last_token_is_if_or_else) {
+		if (!have_print_block_name && last_token_is_if_or_else) {
 			undefined_code_block_stack_elem elem = undefined_code_block_stack.top();
 			undefined_code_block_stack.pop();
 //			fprintf(output, "\n\n\n%%%d:\t; 定义省略了大括号的赋值语句\n", elem.register_num);
@@ -1257,9 +1260,6 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 			have_logic_or = true;
 		}
 		logic_or_num++;
-		if (res.is_function) {
-			// TODO do sth to deal func
-		}
 
 		fprintf(output, "%%%d = icmp ne i32 0, ", register_num);
 		word = get_symbol(input);
@@ -1272,9 +1272,6 @@ void Cond(FILE *file, bool is_else_if_cond = false, bool is_while_cond = false) 
 	}
 
 	if (have_logic_or) {
-		if (res.is_function) {
-			// TODO do sth to deal func
-		}
 
 		fprintf(output, "%%%d = icmp ne i32 0, ", register_num);
 		print_number_stack_elem(res);
