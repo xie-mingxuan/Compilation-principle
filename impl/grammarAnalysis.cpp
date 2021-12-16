@@ -527,11 +527,11 @@ void Stmt(FILE *file, int function_type) {
 						Stmt(input);
 					else {
 						code_block_layer++;
-						word = get_symbol(input);
 						last_token_is_if_or_else = false;
 						int can_deal_multiply_stmt_temp2 = can_deal_multiply_stmt;
 						int can_deal_left_temp_2 = can_deal_stmt_left;
 						update_can_deal_multiply_stmt();
+						word = get_symbol(input);
 						while (word.type != SYMBOL || word.token != "RBrace")
 							BlockItem(input, function_type);
 						code_block_layer--;
