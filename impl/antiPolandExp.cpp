@@ -447,7 +447,8 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 						number_stack_elem array_dimension_value[10];
 						int offset = register_num;
 						fprintf(output, "%%%d = add i32 0, 0\t\t\t; 定义临时变量偏移量 0，用来计算数组元素的位置\n", register_num++);
-						for (int i = 1; i <= elem.dimension; i++) {
+						int i;
+						for (i = 1; i <= elem.dimension; i++) {
 							word = get_symbol(input);
 							if (word.type != SYMBOL || word.token != "[")
 								break;
@@ -484,11 +485,13 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 							fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n",
 									register_num++, elem.variable_type.c_str(), elem.variable_type.c_str(),
 									elem.saved_pointer.c_str(), offset);
-						fprintf(output, "%%%d = load i32, i32* %%%d\t; 加载数组元素的值\n", register_num, register_num - 1);
 						number_stack_elem x;
 						x.is_variable = true;
 						stringstream stream;
-						stream << register_num++;
+						if (i == elem.dimension + 1) {
+							fprintf(output, "%%%d = load i32, i32* %%%d\t; 加载数组元素的值\n", register_num, register_num - 1);
+							stream << register_num++;
+						} else stream << register_num - 1;
 						x.variable = "%" + stream.str();
 						number_stack.push(x);
 						if (word.token == "RPar" || word.token == "Comma")
