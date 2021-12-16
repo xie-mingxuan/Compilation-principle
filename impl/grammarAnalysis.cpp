@@ -40,7 +40,7 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 	variable_list_elem function_elem;
 	if (is_main_func) {
 		fprintf(output, "@main");
-		word = get_symbol(input);
+		word = get_symbol(file);
 	} else {
 		function_elem.code_block_layer = 0;
 		function_elem.token.type = "Ident";
@@ -61,7 +61,7 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 	while (word.type != SYMBOL || word.token != "RPar") {
 		if (word.type != IDENT || word.token != "int")
 			exit_();
-		word = get_symbol(input);
+		word = get_symbol(file);
 		variable_list_elem elem;
 		elem.token = word;
 		stringstream stream;
@@ -69,7 +69,7 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 		elem.saved_register = "%" + stream.str();
 		elem.code_block_layer = 1;
 
-		word = get_symbol(input);
+		word = get_symbol(file);
 		if (word.type == SYMBOL && (word.token == "Comma" || word.token == "RPar")) {
 			elem.variable_type = "i32";
 			function_elem.function_param_type[++func_param_number] = "i32";
@@ -77,36 +77,36 @@ void FuncDef(FILE *file, bool is_main_func, int function_type, const string &fun
 			variable_list.push_back(elem);
 			if (word.token == "RPar")
 				break;
-			word = get_symbol(input);
+			word = get_symbol(file);
 			continue;
 		} else {
 			if (word.type != SYMBOL || word.token != "[")
 				exit_();
-			word = get_symbol(input);
+			word = get_symbol(file);
 			if (word.type != SYMBOL || word.token != "]")
 				exit_();
 			elem.dimension++;
-			word = get_symbol(input);
+			word = get_symbol(file);
 			// 二维数组
 			if (word.type == SYMBOL && word.token == "[") {
-				word = get_symbol(input);
+				word = get_symbol(file);
 				elem.dimension++;
 				elem.dimension_num[2] = word.num;
-				word = get_symbol(input);
+				word = get_symbol(file);
 				if (word.type != SYMBOL || word.token != "]")
 					exit_();
-				word = get_symbol(input);
+				word = get_symbol(file);
 			}
 			// 数组指针（无论一维还是二维）都是 i32 * 类型
 			elem.variable_type = "i32*";
-			elem.function_param_type[func_param_number++] = "i32*";
+			function_elem.function_param_type[++func_param_number] = "i32*";
 			elem.is_array = true;
 			variable_list.push_back(elem);
 		}
 		fprintf(output, "%s %%%d, ", elem.variable_type.c_str(), register_num - 1);
 
 		if (word.type == SYMBOL && word.token == "Comma")
-			word = get_symbol(input);
+			word = get_symbol(file);
 	}
 	function_elem.function_param_num = func_param_number;
 
