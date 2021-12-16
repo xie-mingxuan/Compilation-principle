@@ -1534,7 +1534,7 @@ void print_function_elem(const variable_list_elem &elem) {
 	if (word.type != SYMBOL || word.token != "RPar")
 		exit_();
 	if (elem.function_return_type == INT)
-		fprintf(output, "call i32 @%s(", elem.token.token.c_str());
+		fprintf(output, "%%%d = call i32 @%s(", register_num++, elem.token.token.c_str());
 	else
 		fprintf(output, "call void @%s(", elem.token.token.c_str());
 	for (int i = 1; i <= elem.function_param_num; i++) {
