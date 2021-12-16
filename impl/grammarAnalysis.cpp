@@ -170,8 +170,8 @@ void Block(FILE *file, int function_type, bool is_function_define) {
 
 	if (!have_returned) {
 		if (function_type == INT)
-			fprintf(output, "return i32 0\n");
-		else fprintf(output, "return void\n");
+			fprintf(output, "ret i32 0\n");
+		else fprintf(output, "ret void\n");
 	}
 
 	fprintf(output, "}\n\n");
