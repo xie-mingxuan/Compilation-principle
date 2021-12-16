@@ -477,9 +477,13 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 								offset = register_num++;
 							}
 						}
-						fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n",
-								register_num++, elem.variable_type.c_str(), elem.variable_type.c_str(),
-								elem.saved_pointer.c_str(), offset);
+						if (elem.variable_type == "i32*")
+							fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n",
+									register_num++, elem.saved_pointer.c_str(), offset);
+						else
+							fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n",
+									register_num++, elem.variable_type.c_str(), elem.variable_type.c_str(),
+									elem.saved_pointer.c_str(), offset);
 						fprintf(output, "%%%d = load i32, i32* %%%d\t; 加载数组元素的值\n", register_num, register_num - 1);
 						number_stack_elem x;
 						x.is_variable = true;
@@ -645,10 +649,13 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				}
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit_();
-
-				fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
-						array.variable_type.c_str(), array.variable_type.c_str(), array.saved_pointer.c_str(),
-						offset_register);
+				if (array.variable_type == "i32*")
+					fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+							array.saved_pointer.c_str(), offset_register);
+				else
+					fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+							array.variable_type.c_str(), array.variable_type.c_str(), array.saved_pointer.c_str(),
+							offset_register);
 				fprintf(output, "%%%d = call i32 @getarray(i32* %%%d)\n", register_num, register_num - 1);
 				number_stack_elem res;
 				res.is_variable = true;

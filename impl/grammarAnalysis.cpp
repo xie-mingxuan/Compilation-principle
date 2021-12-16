@@ -769,10 +769,13 @@ void Stmt(FILE *file, int function_type) {
 				if (word.type != SYMBOL || word.token != "]")
 					exit_();
 			}
-
-			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
-					para2.variable_type.c_str(), para2.variable_type.c_str(), para2.saved_pointer.c_str(),
-					offset_register);
+			if (para2.variable_type == "i32*")
+				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+						para2.saved_pointer.c_str(), offset_register);
+			else
+				fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+						para2.variable_type.c_str(), para2.variable_type.c_str(), para2.saved_pointer.c_str(),
+						offset_register);
 			fprintf(output, "call void @putarray(i32 ");
 			print_number_stack_elem(para1);
 			fprintf(output, ", i32* %%%d)\n", register_num - 1);
@@ -822,9 +825,13 @@ void Stmt(FILE *file, int function_type) {
 				register_num++;
 			}
 
-			fprintf(output, "%%%d = getelementptr %s, %s*, %s, i32 0, i32 %%%d\n", register_num++,
-					array.variable_type.c_str(), array.variable_type.c_str(), array.saved_pointer.c_str(),
-					offset_register);
+			if (array.variable_type == "i32*")
+				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+						array.saved_pointer.c_str(), offset_register);
+			else
+				fprintf(output, "%%%d = getelementptr %s, %s*, %s, i32 0, i32 %%%d\n", register_num++,
+						array.variable_type.c_str(), array.variable_type.c_str(), array.saved_pointer.c_str(),
+						offset_register);
 			fprintf(output, "%%%d = call i32 @getarray(i32* %%%d)\n", register_num, register_num - 1);
 			register_num++;
 
@@ -894,9 +901,13 @@ void Stmt(FILE *file, int function_type) {
 					offset = register_num++;
 				}
 			}
-			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n",
-					register_num++, left_value.variable_type.c_str(), left_value.variable_type.c_str(),
-					left_value.saved_pointer.c_str(), offset);
+			if (left_value.variable_type == "i32*")
+				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+						left_value.saved_pointer.c_str(), offset);
+			else
+				fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %%%d\t; 获取数组元素对应的指针\n",
+						register_num++, left_value.variable_type.c_str(), left_value.variable_type.c_str(),
+						left_value.saved_pointer.c_str(), offset);
 			stringstream stream;
 			stream << register_num - 1;
 			left_value_pointer = "%" + stream.str();
@@ -1469,9 +1480,13 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 			}
 			offset += current_pos[dimension];
 			int pointer_pos = register_num++;
-			fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %d\n", pointer_pos,
-					array.variable_type.c_str(),
-					array.variable_type.c_str(), array.saved_pointer.c_str(), offset);
+			if (array.variable_type == "i32*")
+				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
+						array.saved_pointer.c_str(), offset);
+			else
+				fprintf(output, "%%%d = getelementptr %s, %s* %s, i32 0, i32 %d\n", pointer_pos,
+						array.variable_type.c_str(),
+						array.variable_type.c_str(), array.saved_pointer.c_str(), offset);
 			number_stack_elem res = calcAntiPoland(input, is_const_define, is_global_define);
 			if (res.is_variable)
 				fprintf(output, "store i32 %s, i32* %%%d\n", res.variable.c_str(), pointer_pos);
@@ -1496,7 +1511,7 @@ void reload_param() {
 			fprintf(output, "%%%d = load %s, %s* %s\n", register_num++, variable.variable_type.c_str(),
 					variable.variable_type.c_str(), variable.saved_pointer.c_str());
 			if (variable.variable_type == "i32*") {
-				variable.variable_type = "i32";
+//				variable.variable_type = "i32";
 				stringstream stream1;
 				stream1 << register_num - 1;
 				variable.saved_pointer = "%" + stream1.str();
