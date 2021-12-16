@@ -149,6 +149,7 @@ void Ident(FILE *file) {
 }
 
 void Block(FILE *file, int function_type, bool is_function_define) {
+	have_returned = false;
 	if (word.type != SYMBOL || word.token != "LBrace")
 		exit_();
 	code_block_layer++;
