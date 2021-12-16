@@ -529,12 +529,16 @@ void Stmt(FILE *file, int function_type) {
 						code_block_layer++;
 						word = get_symbol(input);
 						last_token_is_if_or_else = false;
+						int can_deal_multiply_stmt_temp2 = can_deal_multiply_stmt;
+						int can_deal_left_temp_2 = can_deal_stmt_left;
 						update_can_deal_multiply_stmt();
 						while (word.type != SYMBOL || word.token != "RBrace")
 							BlockItem(input, function_type);
 						code_block_layer--;
 						update_variable_list();
 						word = get_symbol(input);
+						can_deal_stmt_left = can_deal_left_temp_2;
+						can_deal_multiply_stmt = can_deal_multiply_stmt_temp2;
 					}
 				}
 				is_else_if = false;
