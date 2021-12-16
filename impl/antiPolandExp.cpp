@@ -477,7 +477,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 								offset = register_num++;
 							}
 						}
-						if (elem.variable_type == "i32*")
+						if (elem.variable_type == "i32")
 							fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n",
 									register_num++, elem.saved_pointer.c_str(), offset);
 						else
@@ -649,7 +649,7 @@ number_stack_elem calcAntiPoland(FILE *file, bool is_const_define, bool is_globa
 				}
 				if (word.type != SYMBOL || word.token != "RPar")
 					exit_();
-				if (array.variable_type == "i32*")
+				if (array.variable_type == "i32")
 					fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
 							array.saved_pointer.c_str(), offset_register);
 				else

@@ -769,7 +769,7 @@ void Stmt(FILE *file, int function_type) {
 				if (word.type != SYMBOL || word.token != "]")
 					exit_();
 			}
-			if (para2.variable_type == "i32*")
+			if (para2.variable_type == "i32")
 				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
 						para2.saved_pointer.c_str(), offset_register);
 			else
@@ -825,7 +825,7 @@ void Stmt(FILE *file, int function_type) {
 				register_num++;
 			}
 
-			if (array.variable_type == "i32*")
+			if (array.variable_type == "i32")
 				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
 						array.saved_pointer.c_str(), offset_register);
 			else
@@ -901,7 +901,7 @@ void Stmt(FILE *file, int function_type) {
 					offset = register_num++;
 				}
 			}
-			if (left_value.variable_type == "i32*")
+			if (left_value.variable_type == "i32")
 				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
 						left_value.saved_pointer.c_str(), offset);
 			else
@@ -1480,7 +1480,7 @@ init_array(const variable_list_elem &array, int *current_pos, int dimension, boo
 			}
 			offset += current_pos[dimension];
 			int pointer_pos = register_num++;
-			if (array.variable_type == "i32*")
+			if (array.variable_type == "i32")
 				fprintf(output, "%%%d = getelementptr i32, i32* %s, i32 %%%d\t; 获取数组元素对应的指针\n", register_num++,
 						array.saved_pointer.c_str(), offset);
 			else
@@ -1511,7 +1511,7 @@ void reload_param() {
 			fprintf(output, "%%%d = load %s, %s* %s\n", register_num++, variable.variable_type.c_str(),
 					variable.variable_type.c_str(), variable.saved_pointer.c_str());
 			if (variable.variable_type == "i32*") {
-//				variable.variable_type = "i32";
+				variable.variable_type = "i32";
 				stringstream stream1;
 				stream1 << register_num - 1;
 				variable.saved_pointer = "%" + stream1.str();
